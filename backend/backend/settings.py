@@ -45,6 +45,7 @@ INSTALLED_APPS = [
 
     'users',
     'tasks',
+    'learning_log',
 ]
 
 MIDDLEWARE = [
