@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'users',
     'tasks',
     'learning_log',
+    'github_tracker',
 ]
 
 MIDDLEWARE = [
