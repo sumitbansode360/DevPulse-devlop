@@ -1,42 +1,47 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Eye, EyeOff, User, Mail, Lock } from 'lucide-react'
+import axios from 'axios'
+import { useRouter } from "next/navigation";
 
-interface FormData {
-  first_name: string
-  last_name: string
-  username: string
-  email: string
-  password: string
+interface FormData{
+  first_name: string;
+  last_name: string;
+  username: string;
+  email: string;
+  password: string;
 }
 
-interface FormErrors {
-  first_name?: string
-  last_name?: string
-  username?: string
-  email?: string
-  password?: string
-  general?: string
+interface FormErrors{
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  email?: string;
+  password?: string;
+  general?: string;
 }
+
 
 export default function SignupPage() {
-  const [formData, setFormData] = useState<FormData>({
-    first_name: '',
-    last_name: '',
-    username: '',
-    email: '',
-    password: ''
-  })
 
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
+  const [formData, setFormData] = useState<FormData>({
+    first_name: "",
+    last_name: "",
+    username: "",
+    email: "",
+    password: ""
+  });
+
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {}
@@ -85,49 +90,33 @@ export default function SignupPage() {
   }
 
   const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }))
+    setFormData(prev => ({...prev, [field]: value}));
+    if (errors[field]){
+      setErrors(prev=>({...prev, [field]: undefined}))
     }
-  }
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!validateForm()) {
-      return
+  const handleSubmit = async (e: React.FormEvent) =>{
+    e.preventDefault();
+
+    if(!validateForm()){
+      return;
     }
-
-    setIsLoading(true)
-    setErrors({})
-
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Here you would typically make an API call to create the user
-      // const response = await fetch('/api/signup', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // })
-      
-      console.log('Signup data:', formData)
-      alert('Account created successfully!')
-      
-      // Reset form
-      setFormData({
-        first_name: '',
-        last_name: '',
-        username: '',
-        email: '',
-        password: ''
-      })
-    } catch (error) {
-      setErrors({ general: 'Something went wrong. Please try again.' })
-    } finally {
-      setIsLoading(false)
+    setIsLoading(true);
+    setErrors({});
+    try{
+      const res = await axios.post("http://127.0.0.1:8000/api/users/register/", 
+        formData
+      )
+      const data = await res.data;
+      console.log(data);
+      if(res.status==201){
+        router.push('/') //login
+      }
+    }catch (error){
+      console.log(error)
+    }finally {
+      setIsLoading(false);
     }
   }
 
