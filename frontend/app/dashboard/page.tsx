@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button"
 function page() {
   return (
     <div>      
-        {/* <Button>Click me</Button> */}
-        <p className='bg-blue-500 h-full'>Home</p>
+        <p className='bg-blue-500 h-screen w-7xl'>Home</p>
     </div>
   )
 }
