@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Button } from "./ui/button";
 
 interface AlertDeleteProps {
   children: React.ReactNode;
@@ -33,7 +34,8 @@ export default function AlertDelete({ children, onConfirm, title, description }:
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={onConfirm}>Continue</AlertDialogAction>
+                {/* The action is wrapped in DialogClose to ensure the dialog closes on confirm */}
+                <AlertDialogAction asChild><Button onClick={onConfirm}>Continue</Button></AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

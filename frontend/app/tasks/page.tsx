@@ -14,11 +14,10 @@ import {
   ListTodo,
   CheckCircle2,
   Clock,
-  AlertCircle
 } from 'lucide-react'
 import AlertDelete from '@/components/AlertDelete'
 import TaskDialog from '@/components/TaskDialog'
-import axios from 'axios'
+import api from '@/lib/api'
 
 // Types
 interface Task {
@@ -35,31 +34,13 @@ type TaskFilter = 'all' | 'pending' | 'completed'
 // Task Card Component
 interface TaskCardProps {
   task: Task
-  onEdit: (task: Task) => void
+  onEdit: (updatedTask: Task) => void
   onDelete: (taskId: string) => void
 }
 
 function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
   const getBadgeVariant = (status: Task['status']) => {
     return status === 'completed' ? 'default' : 'secondary'
-  }
-
-  const getPriorityColor = (priority: Task['priority']) => {
-    switch (priority) {
-      case 'high': return 'text-red-500'
-      case 'medium': return 'text-yellow-500'
-      case 'low': return 'text-green-500'
-      default: return 'text-gray-500'
-    }
-  }
-
-  const getPriorityIcon = (priority: Task['priority']) => {
-    switch (priority) {
-      case 'high': return <AlertCircle className="h-3 w-3" />
-      case 'medium': return <Clock className="h-3 w-3" />
-      case 'low': return <CheckCircle2 className="h-3 w-3" />
-      default: return null
-    }
   }
 
   return (
@@ -84,20 +65,21 @@ function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
                   </>
                 )}
               </Badge>
-              <div className={`flex items-center space-x-1 ${getPriorityColor(task.priority)}`}>
-                {getPriorityIcon(task.priority)}
-                <span className="text-xs font-medium capitalize">{task.priority}</span>
-              </div>
             </div>
           </div>
           <div className="flex items-center space-x-1">
-            <TaskDialog title="Edit Task" description={task.description} onEditConfirm={() => onEdit(task)}>
+            <TaskDialog
+              header="Edit Task"
+              title={task.title}
+              description={task.description}
+              onSave={(updatedData) => onEdit({ ...task, ...updatedData })}
+            >
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
               >
-              <Edit className="h-4 w-4" />
+                <Edit className="h-4 w-4" />
               </Button>
             </TaskDialog>
             <AlertDelete
@@ -122,23 +104,15 @@ function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
         </CardDescription>
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>Created: {new Date(task.createdAt).toLocaleDateString()}</span>
-          {task.dueDate && (
-            <span className={`font-medium ${
-              new Date(task.dueDate) < new Date() && task.status === 'pending'
-                ? 'text-red-500' 
-                : 'text-muted-foreground'
-            }`}>
-              Due: {new Date(task.dueDate).toLocaleDateString()}
-            </span>
-          )}
         </div>
       </CardContent>
     </Card>
   )
 }
 
+
 // Empty State Component
-function EmptyState({ onAddTask }: { onAddTask: () => void }) {
+function EmptyState({ onAddTask }: { onAddTask: (task: { title: string; description: string; }) => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4">
       <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-6">
@@ -150,10 +124,13 @@ function EmptyState({ onAddTask }: { onAddTask: () => void }) {
       <p className="text-muted-foreground text-center mb-6 max-w-sm">
         No tasks found. Create your first task 🚀
       </p>
-      <Button onClick={onAddTask} className="gap-2">
-        <Plus className="h-4 w-4" />
-        Add Task
-      </Button>
+      <TaskDialog header="Create New Task" title="" description="" onSave={onAddTask}>
+        <Button className="gap-2">
+          <Plus className="h-4 w-4" />
+          Add Task
+        </Button>
+      </TaskDialog>
+      
     </div>
   )
 }
@@ -161,7 +138,7 @@ function EmptyState({ onAddTask }: { onAddTask: () => void }) {
 // Main Tasks Page Component
 export default function TasksPage() {
   const [IsLoading, setIsLoading] = useState(false);
-  const [tasks, setTasks] = useState([])
+  const [tasks, setTasks] = useState<Task[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<TaskFilter>('all')
 
@@ -169,19 +146,14 @@ export default function TasksPage() {
     async function fetchTasks() {
       setIsLoading(true);
       try {
-        const res = await axios.get('http://127.0.0.1:8000/api/tasks/',
-          {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-          }
-        )
+        const res = await api.get('/tasks/')
         if (res.status === 200) {
-          setTasks(res.data)
+          setTasks(res.data);
         }
-        setIsLoading(false);
       } catch (error) {
         console.error('Error fetching tasks:', error)
+      } finally {
+        setIsLoading(false);
       }
     }
     fetchTasks();
@@ -215,19 +187,40 @@ export default function TasksPage() {
   }), [tasks])
 
   // Handlers
-  const handleAddTask = () => {
-    console.log('Add task clicked')
-    // Here you would open a modal or navigate to add task page
-  }
+  const handleSaveTask = async (taskData: { title: string; description: string; }) => {
+    setIsLoading(true);
+    try {
+      const res = await api.post('/tasks/', taskData);
+      if (res.status === 201) {
+        setTasks(prevTasks => [res.data, ...prevTasks]);
+      }
+    } catch (error) {
+      console.error('Error creating task:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const handleEditTask = (task: Task) => {
-    console.log('Edit task:', task.id)
-    // Here you would open edit modal or navigate to edit page
+  const handleEditTask = async (updatedTask: Task) => {
+    setIsLoading(true);
+    try {
+      const res = await api.put(`/tasks/${updatedTask.id}/`, updatedTask);
+      if (res.status === 200) {
+        setTasks(tasks.map(t => t.id === updatedTask.id ? res.data : t));
+      }
+    } catch (error) {
+      console.error(`Error updating task ${updatedTask.id}:`, error);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const handleDeleteTask = (taskId: string) => {
-    console.log('Delete task:', taskId)
     setTasks(prev => prev.filter(task => task.id !== taskId))
+    api.delete(`/tasks/${taskId}/`).catch(error => {
+      console.error(`Error deleting task ${taskId}:`, error);
+      // Optionally, revert state or show an error message
+    });
   }
 
   return (
@@ -242,10 +235,12 @@ export default function TasksPage() {
             Manage your tasks and stay productive
           </p>
         </div>
-        <Button onClick={handleAddTask} className="gap-2 self-start sm:self-auto">
-          <Plus className="h-4 w-4" />
-          Add Task
-        </Button>
+        <TaskDialog header="Create New Task" onSave={handleSaveTask}>
+          <Button className="gap-2 self-start sm:self-auto">
+            <Plus className="h-4 w-4" />
+            Add Task
+          </Button>
+        </TaskDialog>
       </div>
 
       {/* Search & Filters */}
@@ -285,7 +280,7 @@ export default function TasksPage() {
           <TabsContent value={activeFilter} className="mt-6">
             {/* Task List or Empty State */}
             {filteredTasks.length === 0 ? (
-              <EmptyState onAddTask={handleAddTask} />
+              <EmptyState onAddTask={handleSaveTask} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredTasks.map((task) => (

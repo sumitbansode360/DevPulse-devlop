@@ -78,7 +78,7 @@ export default function SignupPage() {
       const data = await res.data;
       console.log(data);
       localStorage.setItem('token', data.access);
-      localStorage.setItem('refresh', data.refresh);
+      localStorage.setItem('refreshToken', data.refresh);
       
       if(res.status==200){
         router.push('dashboard/') // dashboard 
