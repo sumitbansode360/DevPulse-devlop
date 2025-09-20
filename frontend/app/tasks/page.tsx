@@ -3,116 +3,31 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Plus, 
   Search, 
-  Edit, 
-  Trash2, 
   ListTodo,
-  CheckCircle2,
-  Clock,
 } from 'lucide-react'
-import AlertDelete from '@/components/AlertDelete'
 import TaskDialog from '@/components/TaskDialog'
 import api from '@/lib/api'
+import TaskCard from '@/components/TaskCard'
 
-// Types
-interface Task {
-  id: string
-  title: string
-  description: string
-  status: 'pending' | 'completed'
-  createdAt: string
+type Task = {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
 }
 
 type TaskFilter = 'all' | 'pending' | 'completed'
 
 
-// Task Card Component
-interface TaskCardProps {
-  task: Task
-  onEdit: (updatedTask: Task) => void
-  onDelete: (taskId: string) => void
-}
-
-function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
-  const getBadgeVariant = (status: Task['status']) => {
-    return status === 'completed' ? 'default' : 'secondary'
-  }
-
-  return (
-    <Card className="transition-all duration-200 hover:shadow-md hover:shadow-blue-100 dark:hover:shadow-blue-900/20 group">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <CardTitle className="text-lg font-semibold text-foreground mb-2 group-hover:text-blue-600 transition-colors">
-              {task.title}
-            </CardTitle>
-            <div className="flex items-center space-x-2 mb-2">
-              <Badge variant={getBadgeVariant(task.status)} className="text-xs">
-                {task.status === 'completed' ? (
-                  <>
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Completed
-                  </>
-                ) : (
-                  <>
-                    <Clock className="h-3 w-3 mr-1" />
-                    Pending
-                  </>
-                )}
-              </Badge>
-            </div>
-          </div>
-          <div className="flex items-center space-x-1">
-            <TaskDialog
-              header="Edit Task"
-              title={task.title}
-              description={task.description}
-              onSave={(updatedData) => onEdit({ ...task, ...updatedData })}
-            >
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-            </TaskDialog>
-            <AlertDelete
-              onConfirm={() => onDelete(task.id)}
-              title="Are you sure you want to delete this task?"
-              description={`This will permanently delete the task "${task.title}". This action cannot be undone.`}
-            >
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 hover:bg-red-100  dark:hover:bg-red-900/20 text-red-600"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </AlertDelete>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <CardDescription className="text-sm text-muted-foreground mb-3 line-clamp-2">
-          {task.description}
-        </CardDescription>
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Created: {new Date(task.createdAt).toLocaleDateString()}</span>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
 
 // Empty State Component
-function EmptyState({ onAddTask }: { onAddTask: (task: { title: string; description: string; }) => void }) {
+function EmptyState({ onAddTask }: { onAddTask: (taskData: { title: string; description: string; }) => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4">
       <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-6">
@@ -130,35 +45,31 @@ function EmptyState({ onAddTask }: { onAddTask: (task: { title: string; descript
           Add Task
         </Button>
       </TaskDialog>
-      
     </div>
   )
 }
 
 // Main Tasks Page Component
 export default function TasksPage() {
-  const [IsLoading, setIsLoading] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>([])
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<TaskFilter>('all')
+  
+  async function fetchTasks() {
+    try{
+      const res = await api.get('/tasks/');
+      if (res.status === 200){
+        setTasks(res.data);
+      }
+    }catch(err){
+      console.log(err);
+    }
+  }
 
   useEffect(() => {
-    async function fetchTasks() {
-      setIsLoading(true);
-      try {
-        const res = await api.get('/tasks/')
-        if (res.status === 200) {
-          setTasks(res.data);
-        }
-      } catch (error) {
-        console.error('Error fetching tasks:', error)
-      } finally {
-        setIsLoading(false);
-      }
-    }
     fetchTasks();
   }, [])
-  
+
   // Filter and search tasks
   const filteredTasks = useMemo(() => {
     let filtered = tasks
@@ -187,40 +98,32 @@ export default function TasksPage() {
   }), [tasks])
 
   // Handlers
-  const handleSaveTask = async (taskData: { title: string; description: string; }) => {
-    setIsLoading(true);
-    try {
-      const res = await api.post('/tasks/', taskData);
-      if (res.status === 201) {
-        setTasks(prevTasks => [res.data, ...prevTasks]);
-      }
-    } catch (error) {
-      console.error('Error creating task:', error);
-    } finally {
-      setIsLoading(false);
+  const handleAddTask = async (taskData: { title: string; description: string; }) => {
+    try{
+      await api.post('/tasks/', taskData);
+      await fetchTasks();
+    }catch(err){
+      console.log(err); 
+      
     }
   };
 
   const handleEditTask = async (updatedTask: Task) => {
-    setIsLoading(true);
-    try {
-      const res = await api.put(`/tasks/${updatedTask.id}/`, updatedTask);
-      if (res.status === 200) {
-        setTasks(tasks.map(t => t.id === updatedTask.id ? res.data : t));
-      }
-    } catch (error) {
-      console.error(`Error updating task ${updatedTask.id}:`, error);
-    } finally {
-      setIsLoading(false);
+    try{
+      await api.put(`/tasks/${updatedTask.id}/`, updatedTask);
+      await fetchTasks();
+    }catch(err){
+      console.log(err);
     }
   }
 
-  const handleDeleteTask = (taskId: string) => {
-    setTasks(prev => prev.filter(task => task.id !== taskId))
-    api.delete(`/tasks/${taskId}/`).catch(error => {
-      console.error(`Error deleting task ${taskId}:`, error);
-      // Optionally, revert state or show an error message
-    });
+  const handleDeleteTask = async (taskId: string) => {
+    try{
+      await api.delete(`/tasks/${taskId}/`);
+      await fetchTasks();
+    }catch(err){
+      console.log(err);
+    }
   }
 
   return (
@@ -235,7 +138,7 @@ export default function TasksPage() {
             Manage your tasks and stay productive
           </p>
         </div>
-        <TaskDialog header="Create New Task" onSave={handleSaveTask}>
+        <TaskDialog header="Create New Task" title="" description="" onSave={handleAddTask}>
           <Button className="gap-2 self-start sm:self-auto">
             <Plus className="h-4 w-4" />
             Add Task
@@ -280,17 +183,19 @@ export default function TasksPage() {
           <TabsContent value={activeFilter} className="mt-6">
             {/* Task List or Empty State */}
             {filteredTasks.length === 0 ? (
-              <EmptyState onAddTask={handleSaveTask} />
+              <EmptyState onAddTask={handleAddTask} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredTasks.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onEdit={handleEditTask}
-                    onDelete={handleDeleteTask}
-                  />
-                ))}
+                {
+                  tasks.map(task =>(
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onEdit={handleEditTask}
+                      onDelete={handleDeleteTask}
+                    />
+                  ))
+                }
               </div>
             )}
           </TabsContent>

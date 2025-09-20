@@ -14,23 +14,27 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface TaskDialogProps{
     children: React.ReactNode;
     header: string;
     title?: string;
     description?: string;
+    status?: string;
     onSave?: (task: Task) => void;
 }
 interface Task{
     title: string;
     description: string;
+    status?: string;
 }
 
-export default function TaskDialog({ children, title = '', description = '', header, onSave }: TaskDialogProps){
+export default function TaskDialog({ children, title = '', description = '', status = 'pending', header, onSave }: TaskDialogProps){
     const [formData, setFormData] = useState<Task>({
         title: title,
-        description: description
+        description: description,
+        status: status,
     });
     const [open, setOpen] = useState(false);
 
@@ -41,9 +45,10 @@ export default function TaskDialog({ children, title = '', description = '', hea
             setFormData({
                 title: title,
                 description: description,
+                status: status,
             });
         }
-    }, [title, description, open]);
+    }, [title, description, status, open]);
 
     const handleSaveChanges = () => {
         if (onSave) {
@@ -77,6 +82,14 @@ export default function TaskDialog({ children, title = '', description = '', hea
                     value={formData.description}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
                 />
+                <div className="flex items-center space-x-2 pt-2">
+                    <Checkbox 
+                      id="status"
+                      checked={formData.status === 'completed'}
+                      onCheckedChange={(checked: boolean) => setFormData({...formData, status: checked ? 'completed' : 'pending'})}
+                    />
+                    <Label htmlFor="status" className="cursor-pointer font-normal">Mark as completed</Label>
+                </div>
             </div>
             <DialogFooter>
                 <DialogClose asChild>
