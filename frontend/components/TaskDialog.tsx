@@ -38,8 +38,6 @@ export default function TaskDialog({ children, title = '', description = '', sta
     });
     const [open, setOpen] = useState(false);
 
-    // This effect syncs the props to the internal state when the dialog is opened.
-    // This is crucial for both setting initial values for "Edit" and resetting for "Create".
     useEffect(() => {
         if (open) {
             setFormData({
@@ -95,7 +93,7 @@ export default function TaskDialog({ children, title = '', description = '', sta
                 <DialogClose asChild>
                 <Button variant="outline">Cancel</Button>
                 </DialogClose>
-                <Button onClick={handleSaveChanges}>Save changes</Button>
+                <Button onClick={handleSaveChanges}>{title ? "Update" : "Create"}changes</Button>
             </DialogFooter>
             </DialogContent>
         </Dialog>

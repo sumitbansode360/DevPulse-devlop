@@ -19,7 +19,12 @@ type Task = {
   id: string;
   title: string;
   description: string;
-  status: string;
+  status: 'pending' | 'completed';
+  count: {
+    all: number;
+    pending: number;
+    completed: number;
+  };
 }
 
 type TaskFilter = 'all' | 'pending' | 'completed'
@@ -54,12 +59,20 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<TaskFilter>('all')
+  const [taskCount, setTaskCount] = useState({all :0, pending: 0, completed: 0})
   
   async function fetchTasks() {
+    
+    const params = new URLSearchParams();
+    if(activeFilter && activeFilter !== 'all'){
+      params.append('status', activeFilter);
+    }
+    
     try{
-      const res = await api.get('/tasks/');
+      const res = await api.get('/tasks/', {params});
       if (res.status === 200){
-        setTasks(res.data);
+        setTasks(res.data.results);
+        setTaskCount(res.data.count);
       }
     }catch(err){
       console.log(err);
@@ -68,34 +81,9 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks();
-  }, [])
+  }, [activeFilter])
 
-  // Filter and search tasks
-  const filteredTasks = useMemo(() => {
-    let filtered = tasks
 
-    // Apply status filter
-    if (activeFilter !== 'all') {
-      filtered = filtered.filter(task => task.status === activeFilter)
-    }
-
-    // Apply search filter
-    if (searchQuery) {
-      filtered = filtered.filter(task => 
-        task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        task.description.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    }
-
-    return filtered
-  }, [tasks, activeFilter, searchQuery])
-
-  // Get task counts for tabs
-  const taskCounts = useMemo(() => ({
-    all: tasks.length,
-    pending: tasks.filter(task => task.status === 'pending').length,
-    completed: tasks.filter(task => task.status === 'completed').length
-  }), [tasks])
 
   // Handlers
   const handleAddTask = async (taskData: { title: string; description: string; }) => {
@@ -163,26 +151,26 @@ export default function TasksPage() {
             <TabsTrigger value="all" className="relative">
               All
               <Badge variant="secondary" className="ml-2 text-xs">
-                {taskCounts.all}
+                {taskCount.all}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="pending" className="relative">
               Pending
               <Badge variant="secondary" className="ml-2 text-xs">
-                {taskCounts.pending}
+                {taskCount.pending}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="completed" className="relative">
               Completed
               <Badge variant="secondary" className="ml-2 text-xs">
-                {taskCounts.completed}
+                {taskCount.completed}
               </Badge>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeFilter} className="mt-6">
             {/* Task List or Empty State */}
-            {filteredTasks.length === 0 ? (
+            {tasks.length === 0 ? (
               <EmptyState onAddTask={handleAddTask} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -207,15 +195,15 @@ export default function TasksPage() {
         <div className="mt-12 pt-8 border-t">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
             <div>
-              <div className="text-2xl font-bold text-foreground">{taskCounts.all}</div>
+              <div className="text-2xl font-bold text-foreground">{taskCount.all}</div>
               <div className="text-sm text-muted-foreground">Total Tasks</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-orange-600">{taskCounts.pending}</div>
+              <div className="text-2xl font-bold text-orange-600">{taskCount.pending}</div>
               <div className="text-sm text-muted-foreground">Pending</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-green-600">{taskCounts.completed}</div>
+              <div className="text-2xl font-bold text-green-600">{taskCount.completed}</div>
               <div className="text-sm text-muted-foreground">Completed</div>
             </div>
           </div>
