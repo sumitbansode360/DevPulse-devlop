@@ -12,13 +12,18 @@ interface Task {
   id: string
   title: string
   description: string
-  status: string
+  status: 'pending' | 'completed';
+  count: {
+    all: number;
+    pending: number;
+    completed: number;
+  };
 }
 
 // Task Card Component
 interface TaskCardProps {
   task: Task
-  onEdit: (updatedTask: Task) => void
+  onEdit: (updatedTask: Task) => Promise<void>
   onDelete: (taskId: string) => void
 }
 

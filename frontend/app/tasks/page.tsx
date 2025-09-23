@@ -67,6 +67,9 @@ export default function TasksPage() {
     if(activeFilter && activeFilter !== 'all'){
       params.append('status', activeFilter);
     }
+    if(searchQuery){
+      params.append('search', searchQuery);
+    }
     
     try{
       const res = await api.get('/tasks/', {params});
@@ -80,10 +83,11 @@ export default function TasksPage() {
   }
 
   useEffect(() => {
-    fetchTasks();
-  }, [activeFilter])
-
-
+    const debounceTimer = setTimeout(() => {
+      fetchTasks();
+    }, 300)
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery, activeFilter])
 
   // Handlers
   const handleAddTask = async (taskData: { title: string; description: string; }) => {

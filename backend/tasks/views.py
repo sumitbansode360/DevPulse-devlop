@@ -4,11 +4,13 @@ from rest_framework.viewsets import ModelViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.filters import SearchFilter
 
 class TaskViewSet(ModelViewSet):
     serializer_class = TaskSerializer
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ['status']
+    search_fields = ['title', 'description']
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
