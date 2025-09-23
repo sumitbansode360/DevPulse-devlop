@@ -93,7 +93,7 @@ export default function TaskDialog({ children, title = '', description = '', sta
                 <DialogClose asChild>
                 <Button variant="outline">Cancel</Button>
                 </DialogClose>
-                <Button onClick={handleSaveChanges}>{title ? "Update" : "Create"}changes</Button>
+                <Button onClick={handleSaveChanges}>{title ? "Update" : "Create"}</Button>
             </DialogFooter>
             </DialogContent>
         </Dialog>
