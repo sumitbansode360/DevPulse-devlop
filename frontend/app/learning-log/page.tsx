@@ -1,9 +1,510 @@
-import React from 'react'
+'use client'
 
-export default function LearningLog() {
-    return (
-        <div>
-            <h1>Learning Log</h1>   
+import { useState, useMemo } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import {
+  BookOpen,
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Calendar,
+  Filter,
+  Code,
+  Palette,
+  User,
+  Lightbulb,
+  Target
+} from 'lucide-react'
+
+// Types
+interface LearningEntry {
+  id: string
+  title: string
+  notes: string
+  category: string
+  date: string
+  createdAt: string
+}
+
+type FilterType = 'all' | 'programming' | 'design' | 'personal' | 'business' | 'other'
+
+// Categories with icons and colors
+const categories = {
+  programming: {
+    label: 'Programming',
+    icon: Code,
+    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+    dotColor: 'bg-blue-500'
+  },
+  design: {
+    label: 'Design',
+    icon: Palette,
+    color: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+    dotColor: 'bg-purple-500'
+  },
+  personal: {
+    label: 'Personal',
+    icon: User,
+    color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+    dotColor: 'bg-green-500'
+  },
+  business: {
+    label: 'Business',
+    icon: Target,
+    color: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
+    dotColor: 'bg-orange-500'
+  },
+  other: {
+    label: 'Other',
+    icon: Lightbulb,
+    color: 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300',
+    dotColor: 'bg-gray-500'
+  }
+}
+
+// Dummy data
+const dummyEntries: LearningEntry[] = [
+  {
+    id: '1',
+    title: 'Advanced React Hooks Patterns',
+    notes: 'Learned about useCallback, useMemo optimization techniques. Custom hooks for data fetching. Understanding when to use each hook for performance optimization. Key insights: useCallback for function memoization, useMemo for expensive calculations.',
+    category: 'programming',
+    date: '2024-01-15',
+    createdAt: '2024-01-15T10:30:00Z'
+  },
+  {
+    id: '2',
+    title: 'UI/UX Design Principles',
+    notes: 'Studied the fundamentals of user interface design. Color theory, typography hierarchy, and spacing principles. Learned about the importance of user feedback and micro-interactions in creating engaging experiences.',
+    category: 'design',
+    date: '2024-01-14',
+    createdAt: '2024-01-14T15:22:00Z'
+  },
+  {
+    id: '3',
+    title: 'Time Management Techniques',
+    notes: 'Explored different productivity methods including Pomodoro Technique, Getting Things Done (GTD), and time blocking. The key is finding what works for your workflow and sticking to it consistently.',
+    category: 'personal',
+    date: '2024-01-13',
+    createdAt: '2024-01-13T09:15:00Z'
+  },
+  {
+    id: '4',
+    title: 'TypeScript Generics Deep Dive',
+    notes: 'Advanced TypeScript concepts: generic constraints, conditional types, mapped types. How to create reusable, type-safe utilities. Practical examples with React components and API response handling.',
+    category: 'programming',
+    date: '2024-01-12',
+    createdAt: '2024-01-12T14:45:00Z'
+  },
+  {
+    id: '5',
+    title: 'Leadership Communication Skills',
+    notes: 'Workshop on effective communication in leadership roles. Active listening techniques, giving constructive feedback, and managing difficult conversations. Practice with real scenarios and role-playing exercises.',
+    category: 'business',
+    date: '2024-01-11',
+    createdAt: '2024-01-11T11:20:00Z'
+  }
+]
+
+// Add Entry Form Component
+function AddEntryForm({ onSubmit, onCancel }: { 
+  onSubmit: (entry: Omit<LearningEntry, 'id' | 'createdAt'>) => void
+  onCancel: () => void 
+}) {
+  const [formData, setFormData] = useState({
+    title: '',
+    notes: '',
+    category: '',
+    date: new Date().toISOString().split('T')[0]
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (formData.title && formData.notes && formData.category) {
+      onSubmit(formData)
+      setFormData({ title: '', notes: '', category: '', date: new Date().toISOString().split('T')[0] })
+      onCancel()
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="title">Topic/Title</Label>
+        <Input
+          id="title"
+          placeholder="What did you learn about?"
+          value={formData.title}
+          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="notes">Notes/What I Learned</Label>
+        <Textarea
+          id="notes"
+          placeholder="Describe what you learned, key insights, or important takeaways..."
+          value={formData.notes}
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          rows={4}
+          required
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="category">Category</Label>
+          <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a category" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(categories).map(([key, cat]) => {
+                const IconComponent = cat.icon
+                return (
+                  <SelectItem key={key} value={key}>
+                    <div className="flex items-center space-x-2">
+                      <IconComponent className="h-4 w-4" />
+                      <span>{cat.label}</span>
+                    </div>
+                  </SelectItem>
+                )
+              })}
+            </SelectContent>
+          </Select>
         </div>
-    )
+
+        <div className="space-y-2">
+          <Label htmlFor="date">Learning Date</Label>
+          <Input
+            id="date"
+            type="date"
+            value={formData.date}
+            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            required
+          />
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Entry
+        </Button>
+      </DialogFooter>
+    </form>
+  )
+}
+
+// Learning Entry Card Component
+function LearningEntryCard({ 
+  entry, 
+  onEdit, 
+  onDelete 
+}: { 
+  entry: LearningEntry
+  onEdit: (entry: LearningEntry) => void
+  onDelete: (id: string) => void
+}) {
+  const category = categories[entry.category as keyof typeof categories] || categories.other
+  const IconComponent = category.icon
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  }
+
+  const truncateNotes = (notes: string, maxLength: number = 150) => {
+    return notes.length > maxLength ? `${notes.substring(0, maxLength)}...` : notes
+  }
+
+  return (
+    <Card className="transition-all duration-200 hover:shadow-md hover:shadow-blue-100 dark:hover:shadow-blue-900/20 group">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-lg font-semibold text-foreground mb-2 group-hover:text-blue-600 transition-colors">
+              {entry.title}
+            </CardTitle>
+            <div className="flex items-center space-x-3 mb-2">
+              <Badge className={category.color}>
+                <IconComponent className="h-3 w-3 mr-1" />
+                {category.label}
+              </Badge>
+              <div className="flex items-center space-x-1 text-sm text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <span>{formatDate(entry.date)}</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onEdit(entry)}
+              className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/20"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(entry.id)}
+              className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <CardDescription className="text-sm text-muted-foreground leading-relaxed">
+          {truncateNotes(entry.notes)}
+        </CardDescription>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Main Learning Log Component
+export default function LearningLogPage() {
+  const [entries, setEntries] = useState<LearningEntry[]>(dummyEntries)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState<FilterType>('all')
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+
+  // Filter and search entries
+  const filteredEntries = useMemo(() => {
+    let filtered = entries
+
+    // Apply category filter
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(entry => entry.category === categoryFilter)
+    }
+
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(entry => 
+        entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        entry.notes.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    }
+
+    // Sort by date (most recent first)
+    return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  }, [entries, categoryFilter, searchQuery])
+
+  // Get category counts for filters
+  const categoryCounts = useMemo(() => {
+    const counts = { all: entries.length }
+    Object.keys(categories).forEach(cat => {
+      counts[cat as keyof typeof counts] = entries.filter(entry => entry.category === cat).length
+    })
+    return counts
+  }, [entries])
+
+  // Handlers
+  const handleAddEntry = (entryData: Omit<LearningEntry, 'id' | 'createdAt'>) => {
+    const newEntry: LearningEntry = {
+      ...entryData,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString()
+    }
+    setEntries(prev => [newEntry, ...prev])
+  }
+
+  const handleEditEntry = (entry: LearningEntry) => {
+    console.log('Edit entry:', entry.id)
+    // Here you would open edit modal or navigate to edit page
+  }
+
+  const handleDeleteEntry = (id: string) => {
+    setEntries(prev => prev.filter(entry => entry.id !== id))
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+            <BookOpen className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Learning Log</h1>
+            <p className="text-muted-foreground">Track your learning journey and insights</p>
+          </div>
+        </div>
+
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Entry
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Add Learning Entry</DialogTitle>
+              <DialogDescription>
+                Record what you learned today. Add notes, insights, and categorize your learning.
+              </DialogDescription>
+            </DialogHeader>
+            <AddEntryForm 
+              onSubmit={handleAddEntry} 
+              onCancel={() => setIsAddDialogOpen(false)} 
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Search and Filters */}
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search learning entries..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <div className="flex flex-wrap gap-2">
+                <Badge
+                  variant={categoryFilter === 'all' ? 'default' : 'secondary'}
+                  className="cursor-pointer"
+                  onClick={() => setCategoryFilter('all')}
+                >
+                  All ({categoryCounts.all})
+                </Badge>
+                {Object.entries(categories).map(([key, cat]) => {
+                  const IconComponent = cat.icon
+                  const count = categoryCounts[key as keyof typeof categoryCounts] || 0
+                  return (
+                    <Badge
+                      key={key}
+                      variant={categoryFilter === key ? 'default' : 'secondary'}
+                      className={`cursor-pointer ${categoryFilter === key ? cat.color : ''}`}
+                      onClick={() => setCategoryFilter(key as FilterType)}
+                    >
+                      <IconComponent className="h-3 w-3 mr-1" />
+                      {cat.label} ({count})
+                    </Badge>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Learning Entries List */}
+      <div className="space-y-6">
+        {filteredEntries.length === 0 ? (
+          <Card>
+            <CardContent className="pt-12 pb-12">
+              <div className="text-center">
+                <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+                  <BookOpen className="h-12 w-12 text-muted-foreground" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">
+                  {searchQuery || categoryFilter !== 'all' ? 'No entries found' : 'Start your learning journey'}
+                </h3>
+                <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                  {searchQuery || categoryFilter !== 'all' 
+                    ? 'Try adjusting your search or filter criteria.'
+                    : 'Record your first learning experience and build a knowledge base of your growth.'}
+                </p>
+                <Button onClick={() => setIsAddDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Your First Entry
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <ScrollArea className="h-[600px]">
+            <div className="space-y-4 pr-4">
+              {filteredEntries.map((entry) => (
+                <LearningEntryCard
+                  key={entry.id}
+                  entry={entry}
+                  onEdit={handleEditEntry}
+                  onDelete={handleDeleteEntry}
+                />
+              ))}
+            </div>
+          </ScrollArea>
+        )}
+      </div>
+
+      {/* Summary Stats */}
+      {entries.length > 0 && (
+        <Card className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+              <div>
+                <div className="text-2xl font-bold text-blue-600">{entries.length}</div>
+                <div className="text-sm text-muted-foreground">Total Entries</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-green-600">
+                  {Object.keys(categories).length}
+                </div>
+                <div className="text-sm text-muted-foreground">Categories</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {Math.round(entries.reduce((acc, entry) => acc + entry.notes.split(' ').length, 0) / entries.length)}
+                </div>
+                <div className="text-sm text-muted-foreground">Avg Words/Entry</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-orange-600">
+                  {new Date().getFullYear() - new Date(Math.min(...entries.map(e => new Date(e.date).getTime()))).getFullYear() + 1}
+                </div>
+                <div className="text-sm text-muted-foreground">Learning Years</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
 }
