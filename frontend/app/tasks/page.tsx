@@ -60,8 +60,12 @@ export default function TasksPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<TaskFilter>('all')
   const [taskCount, setTaskCount] = useState({all :0, pending: 0, completed: 0})
+  const [prev, setPrev] = useState<string | null>(null);
+  const [next, setNext] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+
   
-  async function fetchTasks() {
+  async function fetchTasks(page = 1) {
     
     const params = new URLSearchParams();
     if(activeFilter && activeFilter !== 'all'){
@@ -71,11 +75,16 @@ export default function TasksPage() {
       params.append('search', searchQuery);
     }
     
+    params.append('page', page.toString());
+  
     try{
       const res = await api.get('/tasks/', {params});
       if (res.status === 200){
         setTasks(res.data.results);
         setTaskCount(res.data.count);
+        setPage(page);
+        setPrev(res.data.previous);
+        setNext(res.data.next);
       }
     }catch(err){
       console.log(err);
@@ -84,10 +93,10 @@ export default function TasksPage() {
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      fetchTasks();
+      fetchTasks(page);
     }, 300)
     return () => clearTimeout(debounceTimer);
-  }, [searchQuery, activeFilter])
+  }, [searchQuery, activeFilter, page])
 
   // Handlers
   const handleAddTask = async (taskData: { title: string; description: string; }) => {
@@ -213,6 +222,23 @@ export default function TasksPage() {
           </div>
         </div>
       )}
+      {/* Pagination */}
+      <div className='flex justify-between items-center mt-8'>
+        <Button 
+          onClick={() => prev && setPage(page - 1)}
+          disabled={!prev}
+          className='px-4 py-2 rounded disabled:opacity-50'
+        >
+          Prev
+        </Button>
+        <Button 
+          onClick={() => next && setPage(page + 1)}
+          disabled={!next}
+          className='px-4 py-2 rounded disabled:opacity-50'
+        >
+          Next
+        </Button>
+      </div>
     </div>
   )
 }
