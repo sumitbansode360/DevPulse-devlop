@@ -16,22 +16,13 @@ import {
   Calendar,
   Zap
 } from 'lucide-react'
-import Example from '@/components/BarCharts'
-import api from '@/lib/api'
-
-type WeeklyActivity = {
-  name: string;
-  push: number;
-  pr: number;
-  issues: number;
-};
 
 // Types matching your API response
 interface GitHubData {
   username: string
   total_repos: number
   top_languages: [string, number][]
-  weekly_activity: WeeklyActivity[] 
+  weekly_activity: any[]
   recent_events: GitHubEvent[]
 }
 
@@ -61,8 +52,40 @@ const languageColors: { [key: string]: string } = {
   Kotlin: '#F18E33'
 }
 
+// Sample data matching your structure
+const sampleData: GitHubData = {
+  username: "sumitbansode360",
+  total_repos: 23,
+  top_languages: [
+    ["Python", 4],
+    ["JavaScript", 4],
+    ["HTML", 3]
+  ],
+  weekly_activity: [],
+  recent_events: [
+    {
+      type: "PushEvent",
+      repo_name: "task-manager",
+      message: "fix bug in login API",
+      created_at: "2025-10-03T11:42:00Z"
+    },
+    {
+      type: "CreateEvent",
+      repo_name: "devpulse-frontend",
+      message: "created repository",
+      created_at: "2025-10-02T09:00:00Z"
+    },
+    {
+      type: "PullRequestEvent",
+      repo_name: "django-backend",
+      message: "opened pull request #42",
+      created_at: "2025-09-30T18:30:00Z"
+    }
+  ]
+}
+
 // Top Languages Component
-function TopLanguages({ languages, totalRepos }: { languages: [string, number][], totalRepos: number}) {
+function TopLanguages({ languages }: { languages: [string, number][] }) {
   if (!languages || languages.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -70,6 +93,8 @@ function TopLanguages({ languages, totalRepos }: { languages: [string, number][]
       </div>
     )
   }
+
+  const totalRepos = languages.reduce((sum, [_, count]) => sum + count, 0)
 
   return (
     <div className="space-y-4">
@@ -104,6 +129,14 @@ function TopLanguages({ languages, totalRepos }: { languages: [string, number][]
       })}
     </div>
   )
+}
+
+// Types for events
+interface GitHubEvent {
+  type: string
+  repo_name: string
+  message: string
+  created_at: string
 }
 
 // Get event icon and color based on type
@@ -210,17 +243,21 @@ export default function GitHubTracker() {
 
     try {
       // Replace this URL with your actual API endpoint
-      const response = await api.get(`/tracker/github-activity/${username}`)
+      const response = await fetch(`/api/github/${username}`)
       
-      if (!response.status) {
+      if (!response.ok) {
         throw new Error('Failed to fetch GitHub data')
       }
 
-      const result = await response.data
-      console.log(result)
+      const result = await response.json()
       setData(result)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch GitHub data')
+      // For demo purposes, use sample data
+      setTimeout(() => {
+        setData({ ...sampleData, username })
+        setError(null)
+      }, 1000)
     } finally {
       setIsLoading(false)
     }
@@ -376,7 +413,7 @@ export default function GitHubTracker() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <TopLanguages languages={data.top_languages} totalRepos={data.total_repos} />
+                <TopLanguages languages={data.top_languages} />
               </CardContent>
             </Card>
 
@@ -434,21 +471,6 @@ export default function GitHubTracker() {
             </CardContent>
           </Card>
 
-          {/* Bar Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Activity className="h-5 w-5" />
-                <span>Weekly Activity</span>
-              </CardTitle>
-              <CardDescription>
-                Latest GitHub events and contributions
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[300px] pt-6">
-              <Example weeklyActivity={data.weekly_activity} />
-            </CardContent> 
-          </Card>
           {/* Summary Card */}
           <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
             <CardContent className="pt-6">
