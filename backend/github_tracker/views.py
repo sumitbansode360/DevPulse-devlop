@@ -4,10 +4,9 @@ from rest_framework.permissions import IsAuthenticated
 from .utils import fetch_github_data
 
 class GitHubActivityView(APIView):
-    permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        username = request.user.username
+    def get(self, request, username=None):
+
         if not username:
             return Response({"error": "GitHub username not set"}, status=400)
 
