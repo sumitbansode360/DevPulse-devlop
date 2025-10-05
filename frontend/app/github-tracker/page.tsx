@@ -20,7 +20,7 @@ import Example from '@/components/BarCharts'
 import api from '@/lib/api'
 
 type WeeklyActivity = {
-  name: string;
+  date: string;
   push: number;
   pr: number;
   issues: number;
@@ -38,9 +38,8 @@ interface GitHubData {
 // Types for events
 interface GitHubEvent {
   type: string
-  repo_name: string
-  message: string
-  created_at: string
+  repo: string
+  date: string
 }
 
 // Language color mapping
@@ -172,10 +171,7 @@ function RecentEvents({ events }: { events: GitHubEvent[] }) {
               <div className="flex items-start justify-between gap-2 mb-1">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-foreground truncate">
-                    {event.repo_name}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {event.message}
+                    {event.repo}
                   </p>
                 </div>
                 <Badge variant="outline" className="flex-shrink-0 text-xs">
@@ -185,7 +181,7 @@ function RecentEvents({ events }: { events: GitHubEvent[] }) {
               
               <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                 <Calendar className="h-3 w-3" />
-                <span>{formatTimeAgo(event.created_at)}</span>
+                <span>{formatTimeAgo(event.date)}</span>
               </div>
             </div>
           </div>
