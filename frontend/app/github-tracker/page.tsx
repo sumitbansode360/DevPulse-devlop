@@ -4,126 +4,36 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Progress } from '@/components/ui/progress'
 import {
   Github,
   Search,
-  Star,
-  GitFork,
-  Calendar,
-  Users,
-  BookOpen,
-  MapPin,
-  Link as LinkIcon,
   Activity,
   TrendingUp,
-  ExternalLink
+  Code,
+  GitBranch,
+  Calendar,
+  Zap
 } from 'lucide-react'
+import Example from '@/components/BarCharts'
 
-// Types
-interface GitHubUser {
-  login: string
-  name: string
-  avatar_url: string
-  bio: string
-  location: string
-  blog: string
-  public_repos: number
-  followers: number
-  following: number
+// Types matching your API response
+interface GitHubData {
+  username: string
+  total_repos: number
+  top_languages: [string, number][]
+  weekly_activity: any[]
+  recent_events: GitHubEvent[]
+}
+
+// Types for events
+interface GitHubEvent {
+  type: string
+  repo_name: string
+  message: string
   created_at: string
-  company?: string
 }
-
-interface Repository {
-  id: number
-  name: string
-  full_name: string
-  description: string
-  stargazers_count: number
-  forks_count: number
-  language: string
-  updated_at: string
-  html_url: string
-  private: boolean
-}
-
-// Dummy data for demonstration
-const dummyUser: GitHubUser = {
-  login: 'octocat',
-  name: 'The Octocat',
-  avatar_url: 'https://github.com/octocat.png',
-  bio: 'GitHub mascot and Git guru. Building the future of software development.',
-  location: 'San Francisco',
-  blog: 'https://github.blog',
-  public_repos: 8,
-  followers: 4892,
-  following: 9,
-  created_at: '2011-01-25T18:44:36Z',
-  company: '@github'
-}
-
-const dummyRepos: Repository[] = [
-  {
-    id: 1,
-    name: 'Hello-World',
-    full_name: 'octocat/Hello-World',
-    description: 'My first repository on GitHub!',
-    stargazers_count: 2345,
-    forks_count: 1234,
-    language: 'JavaScript',
-    updated_at: '2024-01-15T10:30:00Z',
-    html_url: 'https://github.com/octocat/Hello-World',
-    private: false
-  },
-  {
-    id: 2,
-    name: 'Spoon-Knife',
-    full_name: 'octocat/Spoon-Knife',
-    description: 'This repo is for demonstration purposes only.',
-    stargazers_count: 12000,
-    forks_count: 143000,
-    language: 'HTML',
-    updated_at: '2024-01-14T15:22:00Z',
-    html_url: 'https://github.com/octocat/Spoon-Knife',
-    private: false
-  },
-  {
-    id: 3,
-    name: 'git-consortium',
-    full_name: 'octocat/git-consortium',
-    description: 'A consortium of Git-related projects',
-    stargazers_count: 567,
-    forks_count: 89,
-    language: 'Go',
-    updated_at: '2024-01-13T09:15:00Z',
-    html_url: 'https://github.com/octocat/git-consortium',
-    private: false
-  },
-  {
-    id: 4,
-    name: 'linguist',
-    full_name: 'octocat/linguist',
-    description: 'Language Savant. If your repository\'s language is being reported incorrectly, send us a pull request!',
-    stargazers_count: 11500,
-    forks_count: 4200,
-    language: 'Ruby',
-    updated_at: '2024-01-12T14:45:00Z',
-    html_url: 'https://github.com/octocat/linguist',
-    private: false
-  }
-]
 
 // Language color mapping
 const languageColors: { [key: string]: string } = {
@@ -136,142 +46,193 @@ const languageColors: { [key: string]: string } = {
   Ruby: '#701516',
   Go: '#00ADD8',
   Rust: '#dea584',
-  PHP: '#4F5D95'
+  PHP: '#4F5D95',
+  'C++': '#f34b7d',
+  C: '#555555',
+  Swift: '#ffac45',
+  Kotlin: '#F18E33'
 }
 
-// Contribution chart placeholder component
-function ContributionChart() {
-  // Generate dummy contribution data
-  const weeks = 53
-  const days = 7
-  const contributions = Array.from({ length: weeks }, (_, weekIndex) =>
-    Array.from({ length: days }, (_, dayIndex) => {
-      const intensity = Math.random()
-      return {
-        date: `2024-${String(Math.floor(weekIndex / 4) + 1).padStart(2, '0')}-${String(dayIndex + 1).padStart(2, '0')}`,
-        count: Math.floor(intensity * 10),
-        level: intensity > 0.8 ? 4 : intensity > 0.6 ? 3 : intensity > 0.4 ? 2 : intensity > 0.2 ? 1 : 0
-      }
-    })
-  )
-
-  const getLevelColor = (level: number) => {
-    switch (level) {
-      case 0: return 'bg-gray-100 dark:bg-gray-800'
-      case 1: return 'bg-green-200 dark:bg-green-900'
-      case 2: return 'bg-green-300 dark:bg-green-700'
-      case 3: return 'bg-green-400 dark:bg-green-600'
-      case 4: return 'bg-green-500 dark:bg-green-500'
-      default: return 'bg-gray-100 dark:bg-gray-800'
+// Sample data matching your structure
+const sampleData: GitHubData = {
+  username: "sumitbansode360",
+  total_repos: 23,
+  top_languages: [
+    ["Python", 4],
+    ["JavaScript", 4],
+    ["HTML", 3]
+  ],
+  weekly_activity: [],
+  recent_events: [
+    {
+      type: "PushEvent",
+      repo_name: "task-manager",
+      message: "fix bug in login API",
+      created_at: "2025-10-03T11:42:00Z"
+    },
+    {
+      type: "CreateEvent",
+      repo_name: "devpulse-frontend",
+      message: "created repository",
+      created_at: "2025-10-02T09:00:00Z"
+    },
+    {
+      type: "PullRequestEvent",
+      repo_name: "django-backend",
+      message: "opened pull request #42",
+      created_at: "2025-09-30T18:30:00Z"
     }
+  ]
+}
+
+// Top Languages Component
+function TopLanguages({ languages }: { languages: [string, number][] }) {
+  if (!languages || languages.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        No language data available
+      </div>
+    )
   }
+
+  const totalRepos = languages.reduce((sum, [_, count]) => sum + count, 0)
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">Contribution Activity</h3>
-        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-          <span>Less</span>
-          <div className="flex space-x-1">
-            {[0, 1, 2, 3, 4].map(level => (
-              <div
-                key={level}
-                className={`w-2 h-2 rounded-sm ${getLevelColor(level)}`}
-              />
-            ))}
-          </div>
-          <span>More</span>
-        </div>
-      </div>
-      <ScrollArea className="w-full">
-        <div className="grid grid-flow-col gap-1 min-w-fit p-2">
-          {contributions.map((week, weekIndex) => (
-            <div key={weekIndex} className="grid grid-rows-7 gap-1">
-              {week.map((day, dayIndex) => (
+      {languages.map(([language, count]) => {
+        const percentage = (count / totalRepos) * 100
+        const color = languageColors[language] || '#gray'
+        
+        return (
+          <div key={language} className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
                 <div
-                  key={`${weekIndex}-${dayIndex}`}
-                  className={`w-2 h-2 rounded-sm ${getLevelColor(day.level)}`}
-                  title={`${day.count} contributions on ${day.date}`}
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: color }}
                 />
-              ))}
+                <span className="text-sm font-medium">{language}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-muted-foreground">{count} repos</span>
+                <span className="text-sm font-semibold">{percentage.toFixed(1)}%</span>
+              </div>
             </div>
-          ))}
-        </div>
-      </ScrollArea>
+            <Progress 
+              value={percentage} 
+              className="h-2"
+              style={{ 
+                ['--progress-background' as any]: color 
+              }}
+            />
+          </div>
+        )
+      })}
     </div>
   )
 }
 
-// Repository card component
-function RepositoryCard({ repo }: { repo: Repository }) {
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    })
+// Types for events
+interface GitHubEvent {
+  type: string
+  repo_name: string
+  message: string
+  created_at: string
+}
+
+// Get event icon and color based on type
+function getEventIcon(type: string) {
+  switch (type) {
+    case 'PushEvent':
+      return { icon: GitBranch, color: 'bg-green-100 dark:bg-green-900/20 text-green-600' }
+    case 'CreateEvent':
+      return { icon: Zap, color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-600' }
+    case 'PullRequestEvent':
+      return { icon: TrendingUp, color: 'bg-purple-100 dark:bg-purple-900/20 text-purple-600' }
+    case 'IssuesEvent':
+      return { icon: Calendar, color: 'bg-orange-100 dark:bg-orange-900/20 text-orange-600' }
+    default:
+      return { icon: Activity, color: 'bg-gray-100 dark:bg-gray-900/20 text-gray-600' }
+  }
+}
+
+// Format time ago
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+  if (diffInSeconds < 60) return 'just now'
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`
+  
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+// Recent Events Component
+function RecentEvents({ events }: { events: GitHubEvent[] }) {
+  if (!events || events.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+          <Activity className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <h3 className="text-lg font-semibold mb-2">No recent activity</h3>
+        <p className="text-sm text-muted-foreground">
+          Activity will appear here once you start contributing
+        </p>
+      </div>
+    )
   }
 
   return (
-    <Card className="transition-all duration-200 hover:shadow-md hover:shadow-blue-100 dark:hover:shadow-blue-900/20">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <CardTitle className="text-lg flex items-center space-x-2 mb-2">
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-              <a
-                href={repo.html_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-blue-600 transition-colors truncate"
-              >
-                {repo.name}
-              </a>
-              <ExternalLink className="h-3 w-3 text-muted-foreground" />
-            </CardTitle>
-            {repo.description && (
-              <CardDescription className="line-clamp-2 mb-3">
-                {repo.description}
-              </CardDescription>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-            {repo.language && (
-              <div className="flex items-center space-x-1">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: languageColors[repo.language] || '#gray' }}
-                />
-                <span>{repo.language}</span>
+    <div className="space-y-3">
+      {events.map((event, index) => {
+        const { icon: EventIcon, color } = getEventIcon(event.type)
+        
+        return (
+          <div 
+            key={index} 
+            className="flex items-start space-x-4 p-4 rounded-lg border hover:bg-muted/50 transition-colors group"
+          >
+            {/* Icon */}
+            <div className={`p-2.5 rounded-lg ${color} flex-shrink-0`}>
+              <EventIcon className="h-4 w-4" />
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">
+                    {event.repo_name}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {event.message}
+                  </p>
+                </div>
+                <Badge variant="outline" className="flex-shrink-0 text-xs">
+                  {event.type.replace('Event', '')}
+                </Badge>
               </div>
-            )}
-            <div className="flex items-center space-x-1">
-              <Star className="h-3 w-3" />
-              <span>{repo.stargazers_count.toLocaleString()}</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <GitFork className="h-3 w-3" />
-              <span>{repo.forks_count.toLocaleString()}</span>
+              
+              <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <span>{formatTimeAgo(event.created_at)}</span>
+              </div>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground">
-            Updated {formatDate(repo.updated_at)}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        )
+      })}
+    </div>
   )
 }
 
 // Main GitHub Tracker Component
 export default function GitHubTracker() {
   const [username, setUsername] = useState('')
-  const [user, setUser] = useState<GitHubUser | null>(null)
-  const [repos, setRepos] = useState<Repository[]>([])
+  const [data, setData] = useState<GitHubData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -282,14 +243,23 @@ export default function GitHubTracker() {
     setError(null)
 
     try {
-      // Simulate API call - In real app, you'd call GitHub API here
-      setTimeout(() => {
-        setUser({ ...dummyUser, login: username })
-        setRepos(dummyRepos)
-        setIsLoading(false)
-      }, 1000)
+      // Replace this URL with your actual API endpoint
+      const response = await fetch(`/api/github/${username}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch GitHub data')
+      }
+
+      const result = await response.json()
+      setData(result)
     } catch (err) {
-      setError('Failed to fetch GitHub data')
+      setError(err instanceof Error ? err.message : 'Failed to fetch GitHub data')
+      // For demo purposes, use sample data
+      setTimeout(() => {
+        setData({ ...sampleData, username })
+        setError(null)
+      }, 1000)
+    } finally {
       setIsLoading(false)
     }
   }
@@ -301,7 +271,7 @@ export default function GitHubTracker() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-foreground flex items-center justify-center space-x-3 mb-4">
@@ -309,7 +279,7 @@ export default function GitHubTracker() {
           <span>GitHub Activity Tracker</span>
         </h1>
         <p className="text-lg text-muted-foreground">
-          Track GitHub profiles, repositories, and contribution activity
+          Track GitHub profiles, repositories, and coding activity
         </p>
       </div>
 
@@ -321,13 +291,13 @@ export default function GitHubTracker() {
             <span>Search GitHub User</span>
           </CardTitle>
           <CardDescription>
-            Enter a GitHub username to view their profile and repository activity
+            Enter a GitHub username to view their coding statistics and activity
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex space-x-2">
             <Input
-              placeholder="Enter GitHub username (e.g., octocat)"
+              placeholder="Enter GitHub username (e.g., sumitbansode360)"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               onKeyPress={handleKeyPress}
@@ -353,121 +323,185 @@ export default function GitHubTracker() {
         </CardContent>
       </Card>
 
-      {/* User Profile */}
-      {user && (
-        <div className="space-y-8">
+      {/* User Data Display */}
+      {data && (
+        <div className="space-y-6">
+          {/* Profile Header */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Users className="h-5 w-5" />
-                <span>Profile Overview</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col md:flex-row md:items-start space-y-6 md:space-y-0 md:space-x-6">
-                <div className="flex flex-col items-center md:items-start space-y-4">
-                  <Avatar className="h-24 w-24 md:h-32 md:w-32">
-                    <AvatarImage src={user.avatar_url} alt={user.name} />
-                    <AvatarFallback className="text-2xl">
-                      {user.name?.charAt(0) || user.login.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={`https://github.com/${user.login}`} target="_blank" rel="noopener noreferrer">
-                      <Github className="h-4 w-4 mr-2" />
-                      View Profile
-                    </a>
-                  </Button>
-                </div>
-                
-                <div className="flex-1 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full">
+                    <Github className="h-8 w-8 text-white" />
+                  </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-foreground">{user.name}</h2>
-                    <p className="text-muted-foreground">@{user.login}</p>
-                  </div>
-                  
-                  {user.bio && (
-                    <p className="text-foreground">{user.bio}</p>
-                  )}
-                  
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    {user.company && (
-                      <div className="flex items-center space-x-1">
-                        <Users className="h-4 w-4" />
-                        <span>{user.company}</span>
-                      </div>
-                    )}
-                    {user.location && (
-                      <div className="flex items-center space-x-1">
-                        <MapPin className="h-4 w-4" />
-                        <span>{user.location}</span>
-                      </div>
-                    )}
-                    {user.blog && (
-                      <div className="flex items-center space-x-1">
-                        <LinkIcon className="h-4 w-4" />
-                        <a href={user.blog} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600">
-                          {user.blog}
-                        </a>
-                      </div>
-                    )}
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="h-4 w-4" />
-                      <span>Joined {new Date(user.created_at).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex space-x-6">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-foreground">{user.public_repos}</div>
-                      <div className="text-sm text-muted-foreground">Repositories</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-foreground">{user.followers.toLocaleString()}</div>
-                      <div className="text-sm text-muted-foreground">Followers</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-foreground">{user.following.toLocaleString()}</div>
-                      <div className="text-sm text-muted-foreground">Following</div>
-                    </div>
+                    <CardTitle className="text-2xl">@{data.username}</CardTitle>
+                    <CardDescription>GitHub Developer Profile</CardDescription>
                   </div>
                 </div>
+                <Button variant="outline" asChild>
+                  <a 
+                    href={`https://github.com/${data.username}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
+                    <Github className="h-4 w-4 mr-2" />
+                    View on GitHub
+                  </a>
+                </Button>
               </div>
-            </CardContent>
+            </CardHeader>
           </Card>
 
-          {/* Contribution Chart */}
+          {/* Statistics Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Total Repositories */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Repositories</CardTitle>
+                <GitBranch className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{data.total_repos}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Public repositories on GitHub
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Languages Count */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Programming Languages</CardTitle>
+                <Code className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{data.top_languages.length}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Different languages used
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Activity Status */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">
+                  {data.recent_events.length}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Events tracked recently
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Top Languages */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Code className="h-5 w-5" />
+                  <span>Top Languages</span>
+                </CardTitle>
+                <CardDescription>
+                  Most used programming languages across repositories
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TopLanguages languages={data.top_languages} />
+              </CardContent>
+            </Card>
+
+            {/* Language Distribution */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <TrendingUp className="h-5 w-5" />
+                  <span>Language Distribution</span>
+                </CardTitle>
+                <CardDescription>
+                  Repository count by programming language
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {data.top_languages.map(([language, count]) => {
+                    const color = languageColors[language] || '#gray'
+                    return (
+                      <div key={language} className="flex items-center justify-between p-3 rounded-lg border">
+                        <div className="flex items-center space-x-3">
+                          <div
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: color }}
+                          />
+                          <div>
+                            <p className="font-medium">{language}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {count} {count === 1 ? 'repository' : 'repositories'}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge variant="secondary">{count}</Badge>
+                      </div>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Activity Section */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5" />
-                <span>Contribution Activity</span>
+                <Activity className="h-5 w-5" />
+                <span>Recent Activity</span>
               </CardTitle>
               <CardDescription>
-                GitHub contributions for the past year
+                Latest GitHub events and contributions
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ContributionChart />
+              <RecentEvents events={data.recent_events} />
             </CardContent>
           </Card>
 
-          {/* Repositories */}
+          {/* Bar Chart */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <BookOpen className="h-5 w-5" />
-                <span>Recent Repositories</span>
+                <Activity className="h-5 w-5" />
+                <span>Recent Events</span>
               </CardTitle>
               <CardDescription>
-                Latest public repositories
+                Latest GitHub events and contributions
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {repos.map((repo) => (
-                  <RepositoryCard key={repo.id} repo={repo} />
-                ))}
+            <CardContent className="h-[300px]">
+              <Example />
+            </CardContent>
+          </Card>
+          {/* Summary Card */}
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Profile Summary</h3>
+                  <p className="text-muted-foreground">
+                    <strong>@{data.username}</strong> has <strong>{data.total_repos}</strong> public repositories
+                    using <strong>{data.top_languages.length}</strong> different programming languages.
+                    {data.top_languages.length > 0 && (
+                      <> Most used: <strong>{data.top_languages[0][0]}</strong>.</>
+                    )}
+                  </p>
+                </div>
+                <Github className="h-12 w-12 text-blue-600 opacity-20" />
               </div>
             </CardContent>
           </Card>
@@ -475,7 +509,7 @@ export default function GitHubTracker() {
       )}
 
       {/* Empty State */}
-      {!user && !isLoading && (
+      {!data && !isLoading && (
         <div className="text-center py-12">
           <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
             <Github className="h-12 w-12 text-muted-foreground" />
@@ -484,7 +518,7 @@ export default function GitHubTracker() {
             Ready to explore GitHub profiles?
           </h3>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Enter a GitHub username above to view detailed profile information, repository activity, and contribution charts.
+            Enter a GitHub username above to view their coding statistics, top languages, and repository information.
           </p>
         </div>
       )}

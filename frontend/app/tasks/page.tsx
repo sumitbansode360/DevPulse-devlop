@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -14,6 +14,7 @@ import {
 import TaskDialog from '@/components/TaskDialog'
 import api from '@/lib/api'
 import TaskCard from '@/components/TaskCard'
+import { Loader2 } from "lucide-react";
 
 type Task = {
   id: string;
@@ -62,10 +63,9 @@ export default function TasksPage() {
   const [taskCount, setTaskCount] = useState({all :0, pending: 0, completed: 0})
   const [prev, setPrev] = useState<string | null>(null);
   const [next, setNext] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-
+  const [isLoading, setIsLoading] = useState(true);
   
-  async function fetchTasks(page = 1) {
+  async function fetchTasks(url: string = '/tasks/') {
     
     const params = new URLSearchParams();
     if(activeFilter && activeFilter !== 'all'){
@@ -74,18 +74,16 @@ export default function TasksPage() {
     if(searchQuery){
       params.append('search', searchQuery);
     }
-    
-    params.append('page', page.toString());
-  
+      
     try{
-      const res = await api.get('/tasks/', {params});
+      const res = await api.get(url, {params});
       if (res.status === 200){
         setTasks(res.data.results);
         setTaskCount(res.data.count);
-        setPage(page);
         setPrev(res.data.previous);
         setNext(res.data.next);
       }
+      setIsLoading(false);
     }catch(err){
       console.log(err);
     }
@@ -93,10 +91,10 @@ export default function TasksPage() {
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      fetchTasks(page);
+      fetchTasks();
     }, 300)
     return () => clearTimeout(debounceTimer);
-  }, [searchQuery, activeFilter, page])
+  }, [searchQuery, activeFilter])
 
   // Handlers
   const handleAddTask = async (taskData: { title: string; description: string; }) => {
@@ -183,11 +181,13 @@ export default function TasksPage() {
 
           <TabsContent value={activeFilter} className="mt-6">
             {/* Task List or Empty State */}
+            {isLoading && <Loader2 />}
+
             {tasks.length === 0 ? (
               <EmptyState onAddTask={handleAddTask} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {
+                { 
                   tasks.map(task =>(
                     <TaskCard
                       key={task.id}
@@ -199,6 +199,7 @@ export default function TasksPage() {
                 }
               </div>
             )}
+          
           </TabsContent>
         </Tabs>
       </div>
@@ -225,14 +226,14 @@ export default function TasksPage() {
       {/* Pagination */}
       <div className='flex justify-between items-center mt-8'>
         <Button 
-          onClick={() => prev && setPage(page - 1)}
+          onClick={() => prev && fetchTasks(prev)}
           disabled={!prev}
           className='px-4 py-2 rounded disabled:opacity-50'
         >
           Prev
         </Button>
         <Button 
-          onClick={() => next && setPage(page + 1)}
+          onClick={() => next && fetchTasks(next)}
           disabled={!next}
           className='px-4 py-2 rounded disabled:opacity-50'
         >

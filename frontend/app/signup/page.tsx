@@ -13,7 +13,6 @@ import { useRouter } from "next/navigation";
 interface FormData{
   first_name: string;
   last_name: string;
-  username: string;
   email: string;
   password: string;
 }
@@ -21,7 +20,6 @@ interface FormData{
 interface FormErrors{
   first_name?: string;
   last_name?: string;
-  username?: string;
   email?: string;
   password?: string;
   general?: string;
@@ -33,7 +31,6 @@ export default function SignupPage() {
   const [formData, setFormData] = useState<FormData>({
     first_name: "",
     last_name: "",
-    username: "",
     email: "",
     password: ""
   });
@@ -58,15 +55,6 @@ export default function SignupPage() {
       newErrors.last_name = 'Last name is required'
     } else if (formData.last_name.trim().length < 2) {
       newErrors.last_name = 'Last name must be at least 2 characters'
-    }
-
-    // Username validation
-    if (!formData.username.trim()) {
-      newErrors.username = 'Username is required'
-    } else if (formData.username.trim().length < 3) {
-      newErrors.username = 'Username must be at least 3 characters'
-    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      newErrors.username = 'Username can only contain letters, numbers, and underscores'
     }
 
     // Email validation
@@ -172,25 +160,6 @@ export default function SignupPage() {
               </div>
               {errors.last_name && (
                 <p className="text-sm text-red-500">{errors.last_name}</p>
-              )}
-            </div>
-
-            {/* Username */}
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="Choose a username"
-                  value={formData.username}
-                  onChange={(e) => handleInputChange('username', e.target.value)}
-                  className={`pl-10 ${errors.username ? 'border-red-500' : ''}`}
-                />
-              </div>
-              {errors.username && (
-                <p className="text-sm text-red-500">{errors.username}</p>
               )}
             </div>
 
