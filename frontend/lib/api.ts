@@ -71,7 +71,7 @@ api.interceptors.response.use(
         const { data } = await axios.post(`${api.defaults.baseURL}/token/refresh/`, {
           refresh: refreshToken,
         });
-
+        // console.log(data)
         localStorage.setItem('token', data.access);
         processQueue(null, data.access);
         return api(originalRequest);

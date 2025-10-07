@@ -6,12 +6,19 @@ status = [
     ["in_progress", "In Progress"]
 ]
 
+category_choice = [
+    ("progrmamming", "Programming"),
+    ("design", "Design"),
+    ("personal", "Personal"),
+    ("business", "Business"),
+    ("other", "Other")
+]
+
 class Topic(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     start_date = models.DateField(auto_now_add=True)
-    status = models.CharField(max_length=20, choices=status, default="in_progress")
-    progress = models.PositiveIntegerField(default=0)
+    category = models.CharField(max_length=100, choices=category_choice, default="other")
 
     def __str__(self):
         return self.title

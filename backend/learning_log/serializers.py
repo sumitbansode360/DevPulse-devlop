@@ -16,4 +16,4 @@ class TopicSerializer(serializers.ModelSerializer):
     logs = LogSerializer(many=True, read_only=True)
     class Meta:
         model = Topic
-        fields = ['id', 'title', 'start_date', 'status', 'progress', 'user', 'logs']
+        fields = ['id', 'title', 'start_date', 'category', 'user', 'logs']

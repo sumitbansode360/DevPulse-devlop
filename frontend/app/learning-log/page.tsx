@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
 import {
   Select,
   SelectContent,
@@ -39,15 +38,21 @@ import {
   Lightbulb,
   Target
 } from 'lucide-react'
+import api from '@/lib/api'
 
 // Types
 interface LearningEntry {
   id: string
   title: string
-  notes: string
   category: string
-  date: string
-  createdAt: string
+  start_date: string
+}
+
+interface Topic{
+  id: string
+  title: string
+  category: string
+  start_date: string
 }
 
 type FilterType = 'all' | 'programming' | 'design' | 'personal' | 'business' | 'other'
@@ -85,50 +90,6 @@ const categories = {
     dotColor: 'bg-gray-500'
   }
 }
-
-// Dummy data
-const dummyEntries: LearningEntry[] = [
-  {
-    id: '1',
-    title: 'Advanced React Hooks Patterns',
-    notes: 'Learned about useCallback, useMemo optimization techniques. Custom hooks for data fetching. Understanding when to use each hook for performance optimization. Key insights: useCallback for function memoization, useMemo for expensive calculations.',
-    category: 'programming',
-    date: '2024-01-15',
-    createdAt: '2024-01-15T10:30:00Z'
-  },
-  {
-    id: '2',
-    title: 'UI/UX Design Principles',
-    notes: 'Studied the fundamentals of user interface design. Color theory, typography hierarchy, and spacing principles. Learned about the importance of user feedback and micro-interactions in creating engaging experiences.',
-    category: 'design',
-    date: '2024-01-14',
-    createdAt: '2024-01-14T15:22:00Z'
-  },
-  {
-    id: '3',
-    title: 'Time Management Techniques',
-    notes: 'Explored different productivity methods including Pomodoro Technique, Getting Things Done (GTD), and time blocking. The key is finding what works for your workflow and sticking to it consistently.',
-    category: 'personal',
-    date: '2024-01-13',
-    createdAt: '2024-01-13T09:15:00Z'
-  },
-  {
-    id: '4',
-    title: 'TypeScript Generics Deep Dive',
-    notes: 'Advanced TypeScript concepts: generic constraints, conditional types, mapped types. How to create reusable, type-safe utilities. Practical examples with React components and API response handling.',
-    category: 'programming',
-    date: '2024-01-12',
-    createdAt: '2024-01-12T14:45:00Z'
-  },
-  {
-    id: '5',
-    title: 'Leadership Communication Skills',
-    notes: 'Workshop on effective communication in leadership roles. Active listening techniques, giving constructive feedback, and managing difficult conversations. Practice with real scenarios and role-playing exercises.',
-    category: 'business',
-    date: '2024-01-11',
-    createdAt: '2024-01-11T11:20:00Z'
-  }
-]
 
 // Add Entry Form Component
 function AddEntryForm({ onSubmit, onCancel }: { 
@@ -264,7 +225,7 @@ function LearningEntryCard({
               </Badge>
               <div className="flex items-center space-x-1 text-sm text-muted-foreground">
                 <Calendar className="h-3 w-3" />
-                <span>{formatDate(entry.date)}</span>
+                <span>{formatDate(entry.start_date)}</span>
               </div>
             </div>
           </div>
@@ -288,10 +249,10 @@ function LearningEntryCard({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
-        <CardDescription className="text-sm text-muted-foreground leading-relaxed">
-          {truncateNotes(entry.notes)}
-        </CardDescription>
+      <CardContent>
+        <Button variant='outline'>
+          View logs
+        </Button>
       </CardContent>
     </Card>
   )
@@ -299,58 +260,38 @@ function LearningEntryCard({
 
 // Main Learning Log Component
 export default function LearningLogPage() {
-  const [entries, setEntries] = useState<LearningEntry[]>(dummyEntries)
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<FilterType>('all')
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [topic, setTopics] = useState<Topic[]>([]);
 
-  // Filter and search entries
-  const filteredEntries = useMemo(() => {
-    let filtered = entries
-
-    // Apply category filter
-    if (categoryFilter !== 'all') {
-      filtered = filtered.filter(entry => entry.category === categoryFilter)
+  const fetchTopics = async () => {
+    try{
+      const res = await api.get('/learnings/topics/')
+      const data = await res.data
+      setTopics(data)
+      console.log(data)
+    }catch(err){
+      console.log(err)
     }
+  }
+  useEffect(()=>{
+    fetchTopics()
+  }, [])
 
-    // Apply search filter
-    if (searchQuery) {
-      filtered = filtered.filter(entry => 
-        entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        entry.notes.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    }
 
-    // Sort by date (most recent first)
-    return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  }, [entries, categoryFilter, searchQuery])
-
-  // Get category counts for filters
-  const categoryCounts = useMemo(() => {
-    const counts = { all: entries.length }
-    Object.keys(categories).forEach(cat => {
-      counts[cat as keyof typeof counts] = entries.filter(entry => entry.category === cat).length
-    })
-    return counts
-  }, [entries])
 
   // Handlers
-  const handleAddEntry = (entryData: Omit<LearningEntry, 'id' | 'createdAt'>) => {
-    const newEntry: LearningEntry = {
-      ...entryData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    }
-    setEntries(prev => [newEntry, ...prev])
+  const handleAddEntry = () => {
+
   }
 
   const handleEditEntry = (entry: LearningEntry) => {
     console.log('Edit entry:', entry.id)
-    // Here you would open edit modal or navigate to edit page
   }
 
   const handleDeleteEntry = (id: string) => {
-    setEntries(prev => prev.filter(entry => entry.id !== id))
+    
   }
 
   return (
@@ -411,11 +352,11 @@ export default function LearningLogPage() {
                   className="cursor-pointer"
                   onClick={() => setCategoryFilter('all')}
                 >
-                  All ({categoryCounts.all})
+                  All ()
                 </Badge>
                 {Object.entries(categories).map(([key, cat]) => {
                   const IconComponent = cat.icon
-                  const count = categoryCounts[key as keyof typeof categoryCounts] || 0
+                  const count =  0
                   return (
                     <Badge
                       key={key}
@@ -436,7 +377,7 @@ export default function LearningLogPage() {
 
       {/* Learning Entries List */}
       <div className="space-y-6">
-        {filteredEntries.length === 0 ? (
+        {topic.length === 0 ? (
           <Card>
             <CardContent className="pt-12 pb-12">
               <div className="text-center">
@@ -461,26 +402,28 @@ export default function LearningLogPage() {
         ) : (
           <ScrollArea className="h-[600px]">
             <div className="space-y-4 pr-4">
-              {filteredEntries.map((entry) => (
-                <LearningEntryCard
-                  key={entry.id}
-                  entry={entry}
-                  onEdit={handleEditEntry}
-                  onDelete={handleDeleteEntry}
-                />
-              ))}
+              {
+                topic.map((topic) =>(
+                  <LearningEntryCard 
+                    key={topic.id}
+                    entry={topic}
+                    onEdit={handleEditEntry}
+                    onDelete={handleDeleteEntry}
+                  />
+                ))
+              }
             </div>
           </ScrollArea>
         )}
       </div>
 
       {/* Summary Stats */}
-      {entries.length > 0 && (
+      {topic.length > 0 && (
         <Card className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
           <CardContent className="pt-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
               <div>
-                <div className="text-2xl font-bold text-blue-600">{entries.length}</div>
+                <div className="text-2xl font-bold text-blue-600">{topic.length}</div>
                 <div className="text-sm text-muted-foreground">Total Entries</div>
               </div>
               <div>
@@ -490,14 +433,8 @@ export default function LearningLogPage() {
                 <div className="text-sm text-muted-foreground">Categories</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-purple-600">
-                  {Math.round(entries.reduce((acc, entry) => acc + entry.notes.split(' ').length, 0) / entries.length)}
-                </div>
-                <div className="text-sm text-muted-foreground">Avg Words/Entry</div>
-              </div>
-              <div>
                 <div className="text-2xl font-bold text-orange-600">
-                  {new Date().getFullYear() - new Date(Math.min(...entries.map(e => new Date(e.date).getTime()))).getFullYear() + 1}
+                  2
                 </div>
                 <div className="text-sm text-muted-foreground">Learning Years</div>
               </div>
