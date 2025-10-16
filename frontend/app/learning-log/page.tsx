@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useReducer } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -39,6 +39,7 @@ import {
   Target
 } from 'lucide-react'
 import api from '@/lib/api'
+import { useRouter } from 'next/navigation';
 
 // Types
 interface LearningEntry {
@@ -106,7 +107,7 @@ function AddEntryForm({ onSubmit, onCancel }: {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (formData.title && formData.notes && formData.category) {
-      onSubmit(formData)
+      // onSubmit(formData)
       setFormData({ title: '', notes: '', category: '', date: new Date().toISOString().split('T')[0] })
       onCancel()
     }
@@ -197,6 +198,7 @@ function LearningEntryCard({
 }) {
   const category = categories[entry.category as keyof typeof categories] || categories.other
   const IconComponent = category.icon
+  const router = useRouter();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -250,7 +252,7 @@ function LearningEntryCard({
         </div>
       </CardHeader>
       <CardContent>
-        <Button variant='outline'>
+        <Button variant='outline' onClick={()=>router.push(`learning-log/${entry.id}/`)}>
           View logs
         </Button>
       </CardContent>

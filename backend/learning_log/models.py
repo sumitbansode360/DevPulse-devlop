@@ -7,7 +7,7 @@ status = [
 ]
 
 category_choice = [
-    ("progrmamming", "Programming"),
+    ("programming", "Programming"),
     ("design", "Design"),
     ("personal", "Personal"),
     ("business", "Business"),
@@ -25,6 +25,7 @@ class Topic(models.Model):
 
 class Log(models.Model):
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='logs')
+    title = models.CharField(max_length=100)
     date = models.DateTimeField(auto_now_add=True)
     note = models.TextField(max_length=20000)  
 
