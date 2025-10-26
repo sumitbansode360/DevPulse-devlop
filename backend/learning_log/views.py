@@ -10,7 +10,7 @@ class TopicViewSet(ModelViewSet):
     serializer_class = TopicSerializer
 
     def get_queryset(self):
-        topic = Topic.objects.filter(user=self.request.user)
+        topic = Topic.objects.filter(user=self.request.user).order_by('-updated_at')
         return topic
     
     def perform_create(self, serializer):

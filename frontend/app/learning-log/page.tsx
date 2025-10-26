@@ -40,6 +40,7 @@ import {
 } from 'lucide-react'
 import api from '@/lib/api'
 import { useRouter } from 'next/navigation';
+import { title } from 'process'
 
 // Types
 interface LearningEntry {
@@ -54,6 +55,7 @@ interface Topic{
   title: string
   category: string
   start_date: string
+  user: string
 }
 
 type FilterType = 'all' | 'programming' | 'design' | 'personal' | 'business' | 'other'
@@ -94,21 +96,19 @@ const categories = {
 
 // Add Entry Form Component
 function AddEntryForm({ onSubmit, onCancel }: { 
-  onSubmit: (entry: Omit<LearningEntry, 'id' | 'createdAt'>) => void
+  onSubmit: (entry: Omit<LearningEntry, 'id'>) => void
   onCancel: () => void 
 }) {
   const [formData, setFormData] = useState({
     title: '',
-    notes: '',
     category: '',
-    date: new Date().toISOString().split('T')[0]
+    start_date: new Date().toISOString().split('T')[0]
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (formData.title && formData.notes && formData.category) {
-      // onSubmit(formData)
-      setFormData({ title: '', notes: '', category: '', date: new Date().toISOString().split('T')[0] })
+    if (formData.title && formData.category) {
+      onSubmit(formData)
       onCancel()
     }
   }
@@ -122,18 +122,6 @@ function AddEntryForm({ onSubmit, onCancel }: {
           placeholder="What did you learn about?"
           value={formData.title}
           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="notes">Notes/What I Learned</Label>
-        <Textarea
-          id="notes"
-          placeholder="Describe what you learned, key insights, or important takeaways..."
-          value={formData.notes}
-          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-          rows={4}
           required
         />
       </div>
@@ -166,8 +154,8 @@ function AddEntryForm({ onSubmit, onCancel }: {
           <Input
             id="date"
             type="date"
-            value={formData.date}
-            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            value={formData.start_date}
+            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
             required
           />
         </div>
@@ -272,7 +260,6 @@ export default function LearningLogPage() {
       const res = await api.get('/learnings/topics/')
       const data = await res.data
       setTopics(data)
-      console.log(data)
     }catch(err){
       console.log(err)
     }
@@ -284,8 +271,15 @@ export default function LearningLogPage() {
 
 
   // Handlers
-  const handleAddEntry = () => {
-
+  const handleAddEntry = async (entry: Omit<LearningEntry, 'id'>) => {
+    try{
+      await api.post('/learnings/topics/', entry);
+      // Close the dialog after successful submission
+      setIsAddDialogOpen(false);
+      fetchTopics();
+    }catch(err){
+      console.log(err)
+    }
   }
 
   const handleEditEntry = (entry: LearningEntry) => {
