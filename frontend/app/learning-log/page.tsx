@@ -1,14 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect, useReducer } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -59,6 +56,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { toast } from "sonner"
 
 // Types
 interface LearningEntry {
@@ -297,7 +295,6 @@ function LearningEntryCard({
                     onEdit(entry.id, title)
                     setIsEditDialogOpen(false)
                   }
-
                   }>Save changes</Button>
                 </DialogFooter>
               </DialogContent>
@@ -356,7 +353,7 @@ export default function LearningLogPage() {
       const res = await api.get("/learnings/topics/");
       const data = await res.data;
       setTopics(data);
-    } catch (err) {
+    } catch (err: any) {
       console.log(err);
     }
   };
@@ -367,30 +364,42 @@ export default function LearningLogPage() {
   // Handlers
   const handleAddEntry = async (entry: Omit<LearningEntry, "id">) => {
     try {
-      await api.post("/learnings/topics/", entry);
+      const res = await api.post("/learnings/topics/", entry);
       // Close the dialog after successful submission
-      setIsAddDialogOpen(false);
+      if (res.status === 201) {
+        setIsAddDialogOpen(false);
+        toast.success("Learning added successfully!");
+      }
       fetchTopics();
-    } catch (err) {
+    } catch (err: any) {
       console.log(err);
+      toast.error(err.message);
     }
   };
 
   const handleEditEntry = async (id:string, title: string) => {
     try {
-      await api.patch(`/learnings/topics/${id}/`, {title: title});
+      const res = await api.patch(`/learnings/topics/${id}/`, {title: title});
+      if (res.status === 200) {
+        toast.success("Learning updated successfully!");
+      }
       fetchTopics();
-    } catch (err) {
+    } catch (err: any) {
       console.log(err);
+      toast.error(err.message);
     }
   };
 
   const handleDeleteEntry = async (id: string) => {
     try {
-      await api.delete(`/learnings/topics/${id}/`);
+      const res = await api.delete(`/learnings/topics/${id}/`);
+      if(res.status === 204){
+        toast.success("Learning deleted successfully!");
+      }
       fetchTopics();
-    } catch (err) {
+    } catch (err: any) {
       console.log(err);
+      toast.error(err.message);
     }
   };
 
