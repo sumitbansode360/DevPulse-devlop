@@ -39,7 +39,7 @@ export default function RootLayout({
           </main>
         </div>
       </SidebarProvider>
-      <Toaster />
+      <Toaster position="top-right" />
       </body>
     </html>
   );
