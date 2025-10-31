@@ -22,7 +22,7 @@ class LogViewSet(ModelViewSet):
     
     def get_queryset(self):
         topic_id = self.kwargs.get('topic_pk')
-        return Log.objects.filter(topic=topic_id, topic__user=self.request.user)
+        return Log.objects.filter(topic=topic_id, topic__user=self.request.user).order_by('-date')
     
     def perform_create(self, serializer):
         topic_id = self.kwargs.get('topic_pk')

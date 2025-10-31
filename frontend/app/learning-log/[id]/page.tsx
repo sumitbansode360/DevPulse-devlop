@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 
 // Types
 interface Log {
@@ -181,26 +182,35 @@ function AddLogDialog({
   isOpen,
   onClose,
   topicTitle,
+  topicId,
+  fetchTopicsLogs,
 }: {
   isOpen: boolean;
   onClose: () => void;
   topicTitle: string;
+  topicId: string;
+  fetchTopicsLogs: () => void;
 }) {
   const [formData, setFormData] = useState({
     title: "",
     note: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("New log data:", {
-      ...formData,
-      topicTitle,
-      date: new Date().toISOString(),
-    });
-    // Reset form
-    setFormData({ title: "", note: "" });
-    onClose();
+    try{
+      const res = await api.post(`/learnings/topics/${topicId}/logs/`, formData)
+      if(res.status===201){
+        setFormData({ title: "", note: "" });
+        onClose();
+        toast.success("Log added successfully");
+      }else{
+        toast.error("Something went wrong");
+      }
+      fetchTopicsLogs();
+    }catch(error){
+      console.log(error)
+    }
   };
 
   const handleClose = () => {
@@ -398,6 +408,8 @@ export default function TopicLogsPage() {
           isOpen={isAddDialogOpen}
           onClose={() => setIsAddDialogOpen(false)}
           topicTitle={topic.title}
+          topicId={topicId}
+          fetchTopicsLogs={fetchTopicsLogs}
         />
       </div>
     </div>

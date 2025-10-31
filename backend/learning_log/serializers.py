@@ -8,7 +8,7 @@ class LogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Log
-        fields = ['id', 'topic', 'title', 'date', 'note']
+        fields = ['id', 'topic', 'title', 'date', 'note', 'created_at', 'updated_at']
         read_only_fields  = ['topic', 'date', 'created_at', 'updated_at']
 
 

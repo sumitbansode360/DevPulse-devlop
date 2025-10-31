@@ -37,3 +37,5 @@ class Log(models.Model):
     def __str__(self):
         return f"Log on {self.date.strftime('%Y-%m-%d')} for {self.topic.title}"
 
+    class Meta:
+        ordering = ['-updated_at']
