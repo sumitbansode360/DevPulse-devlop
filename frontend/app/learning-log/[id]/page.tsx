@@ -77,7 +77,6 @@ export default function TopicLogsPage() {
   const [logs, setLogs] = useState<Log[] | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [topic, setTopic] = useState<Topic | null>(null);
-
   const id = useParams();
   const topicId = id.id as string;
 
@@ -96,16 +95,6 @@ export default function TopicLogsPage() {
   useEffect(() => {
     fetchTopicsLogs();
   }, [topicId]);
-
-  const handleEditLog = (log: Log) => {
-    console.log("Edit log:", log.id);
-    // Here you would open an edit dialog or navigate to edit page
-  };
-
-  const handleDeleteLog = (id: string) => {
-    console.log("Delete log:", id);
-    setLogs(logs.filter((log) => log.id !== id));
-  };
 
   if (!topic || logs === null) {
     return <div>Loading...</div>; // Or a proper loading skeleton
@@ -155,8 +144,9 @@ export default function TopicLogsPage() {
               <LogCard
                 key={log.id}
                 log={log}
-                onEdit={handleEditLog}
-                onDelete={handleDeleteLog}
+                topic={topic}
+                topicId={topicId}
+                fetchTopicsLogs={fetchTopicsLogs}
               />
             ))}
           </div>
