@@ -13,11 +13,19 @@ interface Task {
   title: string
   description: string
   status: 'pending' | 'completed';
+  created_at: string;
+  user: string;
   count: {
     all: number;
     pending: number;
     completed: number;
   };
+}
+
+interface formData {
+  title: string;
+  description: string;
+  status: string;
 }
 
 // Task Card Component
@@ -93,10 +101,7 @@ export default function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
           {task.description}
         </CardDescription>
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Created: {new Date(task.createdAt).toLocaleDateString()}</span>
-          {task.dueDate && (
-            <span className={`font-medium ${new Date(task.dueDate) < new Date() && task.status === 'pending' ? 'text-red-500' : 'text-muted-foreground'}`}>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
-          )}
+          <span>Created: {new Date(task.created_at).toLocaleDateString()}</span>
         </div>
       </CardContent>
     </Card>

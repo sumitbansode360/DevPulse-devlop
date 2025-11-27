@@ -16,11 +16,13 @@ import api from '@/lib/api'
 import TaskCard from '@/components/TaskCard'
 import { Loader2 } from "lucide-react";
 
-type Task = {
-  id: string;
-  title: string;
-  description: string;
+interface Task {
+  id: string
+  title: string
+  description: string
   status: 'pending' | 'completed';
+  created_at: string;
+  user: string;
   count: {
     all: number;
     pending: number;
