@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { Toaster } from "@/components/ui/sonner"
+import { Toaster } from "@/components/ui/sonner";
+import ConditionalLayout from "@/components/ConditionalLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,16 +31,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-      <SidebarProvider>
-        <div className="flex min-h-screen min-w-screen overflow-hidden">
-        <AppSidebar />
-          <main className="flex-1 p-3 bg-gray-50">
-            <SidebarTrigger className="mb-4"/>
-            {children}
-          </main>
-        </div>
-      </SidebarProvider>
-      <Toaster position="top-right" />
+        <ConditionalLayout>
+          {children}
+          <Toaster position="top-right" />
+        </ConditionalLayout>
       </body>
     </html>
   );

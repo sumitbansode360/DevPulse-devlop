@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Eye, EyeOff, User, Mail, Lock } from 'lucide-react'
 import axios from 'axios'
 import { useRouter } from "next/navigation";
+import { toast } from 'sonner'
 
 interface FormData{
   email: string;
@@ -81,10 +82,12 @@ export default function SignupPage() {
       localStorage.setItem('refreshToken', data.refresh);
       
       if(res.status==200){
+        toast.success("Logged in successfully!")
         router.push('dashboard/') // dashboard 
       }
     }catch (error: any){
       setErrors({general: error.response.data.detail});
+      toast.error(error.response.data.detail);
     }finally {
       setIsLoading(false);
     }

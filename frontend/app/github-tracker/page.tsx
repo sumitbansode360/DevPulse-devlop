@@ -216,7 +216,7 @@ export default function GitHubTracker() {
       console.log(result)
       setData(result)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch GitHub data')
+      setError('Failed to fetch GitHub data')
     } finally {
       setIsLoading(false)
     }

@@ -3,10 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -17,16 +14,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  BookOpen,
-  Plus,
-  Search,
-  Filter,
-} from "lucide-react";
+import { BookOpen, Plus, Search, Filter, Loader2 } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { LearningEntryCard } from "@/components/LearningTopic/LearningEntry";
-import { AddEntryForm, categories, LearningEntry } from "@/components/LearningTopic/AddLerninEntry";
+import {
+  AddEntryForm,
+  categories,
+  LearningEntry,
+} from "@/components/LearningTopic/AddLerninEntry";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Types
 interface Topic {
@@ -45,27 +48,90 @@ type FilterType =
   | "business"
   | "other";
 
-
+interface Count {
+  all: number;
+  programming: number;
+  design: number;
+  personal: number;
+  business: number;
+  other: number;
+}
 
 // Main Learning Log Component
 export default function LearningLogPage() {
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<FilterType>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [topic, setTopics] = useState<Topic[]>([]);
+  const [categoryCount, setCategoryCount] = useState<Count>({
+    all: 0,
+    programming: 0,
+    design: 0,
+    personal: 0,
+    business: 0,
+    other: 0,
+  });
+  const [prev, setPrev] = useState<string | null>(null);
+  const [next, setNext] = useState<string | null>(null);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(0);
 
-  const fetchTopics = async () => {
+  type CategoryKey = keyof typeof categories;
+
+  const calculateCurrentPage = async (data: any) => {
+    let page = 1;
+    if (data.next) {
+      const nextUrl = new URL(data.next);
+      const nextPageParam = nextUrl.searchParams.get("page");
+      page = nextPageParam ? parseInt(nextPageParam) - 1 : 1;
+    } else if (data.previous) {
+      const prevUrl = new URL(data.previous);
+      const prevPageParam = prevUrl.searchParams.get("page");
+      page = prevPageParam ? parseInt(prevPageParam) + 1 : 2;
+    }
+    return page;
+  };
+  const fetchTopics = async (url: string = "/learnings/topics/") => {
+    const params = new URLSearchParams();
+    if (searchQuery) {
+      params.append("search", searchQuery);
+    }
+    if (categoryFilter && categoryFilter !== "all") {
+      params.append("category", categoryFilter);
+    }
+    params.append("page_size", pageSize.toString());
     try {
-      const res = await api.get("/learnings/topics/");
+      setIsLoading(true);
+      const res = await api.get(url, { params });
       const data = await res.data;
-      setTopics(data);
+      const result = data.results;
+      setTopics(result);
+      setCategoryCount(res.data.category_count);
+      setPrev(res.data.previous);
+      setNext(res.data.next);
+      // Calculate current page based on next/prev URLs
+      const page = await calculateCurrentPage(data);
+      setCurrentPage(page);
+      setTotalPages(Math.ceil(data.count / pageSize));
+      setIsLoading(false);
     } catch (err: any) {
       console.log(err);
+      setIsLoading(false);
+      toast.error("Something went wrong");
     }
   };
   useEffect(() => {
     fetchTopics();
-  }, []);
+  }, [categoryFilter, pageSize]);
+
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      fetchTopics();
+    }, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery]);
 
   // Handlers
   const handleAddEntry = async (entry: Omit<LearningEntry, "id">) => {
@@ -83,9 +149,9 @@ export default function LearningLogPage() {
     }
   };
 
-  const handleEditEntry = async (id:string, title: string) => {
+  const handleEditEntry = async (id: string, title: string) => {
     try {
-      const res = await api.patch(`/learnings/topics/${id}/`, {title: title});
+      const res = await api.patch(`/learnings/topics/${id}/`, { title: title });
       if (res.status === 200) {
         toast.success("Learning updated successfully!");
       }
@@ -99,7 +165,7 @@ export default function LearningLogPage() {
   const handleDeleteEntry = async (id: string) => {
     try {
       const res = await api.delete(`/learnings/topics/${id}/`);
-      if(res.status === 204){
+      if (res.status === 204) {
         toast.success("Learning deleted successfully!");
       }
       fetchTopics();
@@ -170,19 +236,22 @@ export default function LearningLogPage() {
                   className="cursor-pointer"
                   onClick={() => setCategoryFilter("all")}
                 >
-                  All ()
+                  All ({categoryCount.all})
                 </Badge>
                 {Object.entries(categories).map(([key, cat]) => {
+                  const typedKey = key as CategoryKey;
                   const IconComponent = cat.icon;
-                  const count = 0;
+                  const count = categoryCount[typedKey];
                   return (
                     <Badge
-                      key={key}
-                      variant={categoryFilter === key ? "default" : "secondary"}
+                      key={typedKey}
+                      variant={
+                        categoryFilter === typedKey ? "default" : "secondary"
+                      }
                       className={`cursor-pointer ${
                         categoryFilter === key ? cat.color : ""
                       }`}
-                      onClick={() => setCategoryFilter(key as FilterType)}
+                      onClick={() => setCategoryFilter(typedKey)}
                     >
                       <IconComponent className="h-3 w-3 mr-1" />
                       {cat.label} ({count})
@@ -195,47 +264,98 @@ export default function LearningLogPage() {
         </CardContent>
       </Card>
 
-      {/* Learning Entries List */}
-      <div className="space-y-6">
-        {topic.length === 0 ? (
-          <Card>
-            <CardContent className="pt-12 pb-12">
-              <div className="text-center">
-                <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
-                  <BookOpen className="h-12 w-12 text-muted-foreground" />
+      {isLoading ? (
+        <div className="flex flex-col w-full justify-center items-center mt-30">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      ) : (
+        <>
+          {/* Learning Entries List */}
+          <div className="space-y-6">
+            {topic.length === 0 ? (
+              <Card>
+                <CardContent className="pt-12 pb-12">
+                  <div className="text-center">
+                    <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+                      <BookOpen className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-foreground mb-2">
+                      {searchQuery || categoryFilter !== "all"
+                        ? "No entries found"
+                        : "Start your learning journey"}
+                    </h3>
+                    <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                      {searchQuery || categoryFilter !== "all"
+                        ? "Try adjusting your search or filter criteria."
+                        : "Record your first learning experience and build a knowledge base of your growth."}
+                    </p>
+                    <Button onClick={() => setIsAddDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Entry
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <ScrollArea className="h-[600px]">
+                <div className="space-y-4 pr-4">
+                  {topic.map((topic) => (
+                    <LearningEntryCard
+                      key={topic.id}
+                      entry={topic}
+                      onEdit={handleEditEntry}
+                      onDelete={handleDeleteEntry}
+                    />
+                  ))}
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">
-                  {searchQuery || categoryFilter !== "all"
-                    ? "No entries found"
-                    : "Start your learning journey"}
-                </h3>
-                <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                  {searchQuery || categoryFilter !== "all"
-                    ? "Try adjusting your search or filter criteria."
-                    : "Record your first learning experience and build a knowledge base of your growth."}
+              </ScrollArea>
+            )}
+            {/* Pagination */}
+            <div className="w-full flex gap-5 mx-auto max-w-6xl items-end justify-end mt-8">
+              <div className="flex items-center space-x-2">
+                <p className="text-sm font-medium">Rows per page</p>
+                <Select
+                  value={`${pageSize}`}
+                  onValueChange={(value) => setPageSize(Number(value))}
+                >
+                  <SelectTrigger className="h-8 w-[70px]">
+                    <SelectValue placeholder={pageSize} />
+                  </SelectTrigger>
+                  <SelectContent side="top">
+                    {[10, 25, 50, 100].map((pageSize) => (
+                      <SelectItem key={pageSize} value={`${pageSize}`}>
+                        {pageSize}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm font-medium">
+                  Page {currentPage} of {totalPages}
                 </p>
-                <Button onClick={() => setIsAddDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Your First Entry
-                </Button>
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <ScrollArea className="h-[600px]">
-            <div className="space-y-4 pr-4">
-              {topic.map((topic) => (
-                <LearningEntryCard
-                  key={topic.id}
-                  entry={topic}
-                  onEdit={handleEditEntry}
-                  onDelete={handleDeleteEntry}
-                />
-              ))}
+              <Button
+                onClick={() => {
+                  prev && fetchTopics(prev);
+                }}
+                disabled={!prev}
+                className="px-4 py-2 rounded disabled:opacity-50 hover:cursor-pointer"
+              >
+                Prev
+              </Button>
+              <Button
+                onClick={() => {
+                  next && fetchTopics(next);
+                }}
+                disabled={!next}
+                className="px-4 py-2 rounded disabled:opacity-50 hover:cursor-pointer"
+              >
+                Next
+              </Button>
             </div>
-          </ScrollArea>
-        )}
-      </div>
+          </div>
+        </>
+      )}
 
       {/* Summary Stats */}
       {topic.length > 0 && (

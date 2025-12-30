@@ -1,8 +1,16 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { BookOpen, CheckSquare, Github, LayoutDashboard, Timer } from "lucide-react"
-import { usePathname } from "next/navigation"
+import Link from "next/link";
+import {
+  BookOpen,
+  CheckSquare,
+  Github,
+  LayoutDashboard,
+  LogIn,
+  LogOut,
+  Timer,
+} from "lucide-react";
+import { usePathname } from "next/navigation";
 
 import {
   Sidebar,
@@ -17,16 +25,16 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
-import { User2, ChevronUp } from "lucide-react"
+import { User2, ChevronUp } from "lucide-react";
 
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-
+} from "@/components/ui/collapsible";
+import { useEffect, useState } from "react";
 
 // Menu items.
 const items = [
@@ -55,12 +63,18 @@ const items = [
     url: "/learning-log",
     icon: BookOpen,
   },
-]
+];
 
 export function AppSidebar() {
+  const { state } = useSidebar();
+  const pathname = usePathname();
+  const [authToken, setAuthToken] = useState("");
 
-  const {state} = useSidebar();
-  const pathname = usePathname()
+  useEffect(()=>{
+      const token = localStorage.getItem("token") ;
+      if (!token) return
+      setAuthToken(token) 
+  }, [])
 
   return (
     <Sidebar collapsible="icon">
@@ -101,21 +115,24 @@ export function AppSidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      <SidebarMenuSubItem>
+                      {/* <SidebarMenuSubItem>
                         <SidebarMenuSubButton asChild>
                           <Link href="/profile">Profile</Link>
                         </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild>
-                          <Link href="/">Log in</Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                      <SidebarMenuSubItem>
-                        <SidebarMenuSubButton asChild>
-                          <Link href="/logout">Logout</Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
+                      </SidebarMenuSubItem> */}
+                      {authToken ? (
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild>
+                            <Link href="/logout"><LogOut/>Logout</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ) : (
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild>
+                            <Link href="/"><LogIn/>Log in</Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      )}
                     </SidebarMenuSub>
                   </CollapsibleContent>
                 </Collapsible>
@@ -125,5 +142,5 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
-  )
+  );
 }
