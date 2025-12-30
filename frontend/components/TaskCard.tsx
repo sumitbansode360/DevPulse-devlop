@@ -15,7 +15,7 @@ interface Task {
   status: 'pending' | 'completed';
   created_at: string;
   user: string;
-  count: {
+  status_count: {
     all: number;
     pending: number;
     completed: number;

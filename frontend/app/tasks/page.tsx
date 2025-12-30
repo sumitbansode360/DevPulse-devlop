@@ -12,6 +12,13 @@ import api from "@/lib/api";
 import TaskCard from "@/components/TaskCard";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Task {
   id: string;
@@ -20,7 +27,7 @@ interface Task {
   status: "pending" | "completed";
   created_at: string;
   user: string;
-  count: {
+  status_count: {
     all: number;
     pending: number;
     completed: number;
@@ -73,8 +80,24 @@ export default function TasksPage() {
   });
   const [prev, setPrev] = useState<string | null>(null);
   const [next, setNext] = useState<string | null>(null);
+  const [pageSize, setPageSize] = useState<number>(6);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
 
+  const calculateCurrentPage = async (data: any) => {
+    let page = 1;
+    if (data.next) {
+      const nextUrl = new URL(data.next);
+      const nextPageParam = nextUrl.searchParams.get("page");
+      page = nextPageParam ? parseInt(nextPageParam) - 1 : 1;
+    } else if (data.previous) {
+      const prevUrl = new URL(data.previous);
+      const prevPageParam = prevUrl.searchParams.get("page");
+      page = prevPageParam ? parseInt(prevPageParam) + 1 : 2;
+    }
+    return page;
+  };
   async function fetchTasks(url: string = "/tasks/") {
     const params = new URLSearchParams();
     if (activeFilter && activeFilter !== "all") {
@@ -83,15 +106,20 @@ export default function TasksPage() {
     if (searchQuery) {
       params.append("search", searchQuery);
     }
+    params.append("page_size", pageSize.toString());
 
     try {
       setIsLoading(true);
       const res = await api.get(url, { params });
       if (res.status === 200) {
         setTasks(res.data.results);
-        setTaskCount(res.data.count);
+        setTaskCount(res.data.status_count);
         setPrev(res.data.previous);
         setNext(res.data.next);
+        // Calculate current page based on next/prev URLs
+        const page = await calculateCurrentPage(res.data);
+        setCurrentPage(page);
+        setTotalPages(Math.ceil(res.data.count / pageSize));
       }
       setIsLoading(false);
     } catch (err) {
@@ -103,7 +131,7 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks();
-  }, [activeFilter]);
+  }, [activeFilter, pageSize]);
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -234,6 +262,7 @@ export default function TasksPage() {
               <EmptyState onAddTask={handleAddTask} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              
                 {tasks.map((task) => (
                   <TaskCard
                     key={task.id}
@@ -274,18 +303,43 @@ export default function TasksPage() {
         </div>
       )}
       {/* Pagination */}
-      <div className="flex justify-between items-center mt-8">
+      <div className="w-full flex gap-5 mx-auto max-w-6xl items-end justify-end mt-8">
+        <div className="flex items-center space-x-2">
+          <p className="text-sm font-medium">Rows per page</p>
+          <Select
+            value={`${pageSize}`}
+            onValueChange={(value) => setPageSize(Number(value))}
+          >
+            <SelectTrigger className="h-8 w-[70px]">
+              <SelectValue placeholder={pageSize} />
+            </SelectTrigger>
+            <SelectContent side="top">
+              {[6, 24, 54, 60].map((pageSize) => (
+                <SelectItem key={pageSize} value={`${pageSize}`}>
+                  {pageSize}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-sm font-medium">
+            Page {currentPage} of {totalPages}
+          </p>
+        </div>
         <Button
-          onClick={() => prev && fetchTasks(prev)}
+          onClick={() => {
+            prev && fetchTasks(prev);
+          }}
           disabled={!prev}
-          className="px-4 py-2 rounded disabled:opacity-50"
+          className="px-4 py-2 rounded disabled:opacity-50 hover:cursor-pointer"
         >
           Prev
         </Button>
         <Button
-          onClick={() => next && fetchTasks(next)}
+          onClick={() => {
+            next && fetchTasks(next);
+          }}
           disabled={!next}
-          className="px-4 py-2 rounded disabled:opacity-50"
+          className="px-4 py-2 rounded disabled:opacity-50 hover:cursor-pointer"
         >
           Next
         </Button>

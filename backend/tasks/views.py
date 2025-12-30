@@ -42,7 +42,7 @@ class TaskViewSet(ModelViewSet):
         pending_count = Task.objects.filter(user=request.user, status='pending').count()
         completed_count = Task.objects.filter(user=request.user, status='completed').count()
 
-        response.data['count'] = {
+        response.data['status_count'] = {
             "all": all_count,
             "pending": pending_count,
             "completed": completed_count
