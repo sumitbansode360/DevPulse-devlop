@@ -1,11 +1,17 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Github,
   Search,
@@ -14,10 +20,11 @@ import {
   Code,
   GitBranch,
   Calendar,
-  Zap
-} from 'lucide-react'
-import Example from '@/components/BarCharts'
-import api from '@/lib/api'
+  Zap,
+  Loader2,
+} from "lucide-react";
+import Example from "@/components/BarCharts";
+import api from "@/lib/api";
 
 type WeeklyActivity = {
   date: string;
@@ -28,54 +35,60 @@ type WeeklyActivity = {
 
 // Types matching your API response
 interface GitHubData {
-  username: string
-  total_repos: number
-  top_languages: [string, number][]
-  weekly_activity: WeeklyActivity[] 
-  recent_events: GitHubEvent[]
+  username: string;
+  total_repos: number;
+  top_languages: [string, number][];
+  weekly_activity: WeeklyActivity[];
+  recent_events: GitHubEvent[];
 }
 
 // Types for events
 interface GitHubEvent {
-  type: string
-  repo: string
-  date: string
+  type: string;
+  repo: string;
+  date: string;
 }
 
 // Language color mapping
 const languageColors: { [key: string]: string } = {
-  JavaScript: '#f1e05a',
-  TypeScript: '#2b7489',
-  Python: '#3572A5',
-  Java: '#b07219',
-  HTML: '#e34c26',
-  CSS: '#563d7c',
-  Ruby: '#701516',
-  Go: '#00ADD8',
-  Rust: '#dea584',
-  PHP: '#4F5D95',
-  'C++': '#f34b7d',
-  C: '#555555',
-  Swift: '#ffac45',
-  Kotlin: '#F18E33'
-}
+  JavaScript: "#f1e05a",
+  TypeScript: "#2b7489",
+  Python: "#3572A5",
+  Java: "#b07219",
+  HTML: "#e34c26",
+  CSS: "#563d7c",
+  Ruby: "#701516",
+  Go: "#00ADD8",
+  Rust: "#dea584",
+  PHP: "#4F5D95",
+  "C++": "#f34b7d",
+  C: "#555555",
+  Swift: "#ffac45",
+  Kotlin: "#F18E33",
+};
 
 // Top Languages Component
-function TopLanguages({ languages, totalRepos }: { languages: [string, number][], totalRepos: number}) {
+function TopLanguages({
+  languages,
+  totalRepos,
+}: {
+  languages: [string, number][];
+  totalRepos: number;
+}) {
   if (!languages || languages.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
         No language data available
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-4">
       {languages.map(([language, count]) => {
-        const percentage = (count / totalRepos) * 100
-        const color = languageColors[language] || '#gray'
-        
+        const percentage = (count / totalRepos) * 100;
+        const color = languageColors[language] || "#gray";
+
         return (
           <div key={language} className="space-y-2">
             <div className="flex items-center justify-between">
@@ -87,52 +100,78 @@ function TopLanguages({ languages, totalRepos }: { languages: [string, number][]
                 <span className="text-sm font-medium">{language}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-muted-foreground">{count} repos</span>
-                <span className="text-sm font-semibold">{percentage.toFixed(1)}%</span>
+                <span className="text-sm text-muted-foreground">
+                  {count} repos
+                </span>
+                <span className="text-sm font-semibold">
+                  {percentage.toFixed(1)}%
+                </span>
               </div>
             </div>
-            <Progress 
-              value={percentage} 
+            <Progress
+              value={percentage}
               className="h-2"
-              style={{ 
-                ['--progress-background' as any]: color 
+              style={{
+                ["--progress-background" as any]: color,
               }}
             />
           </div>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
 // Get event icon and color based on type
 function getEventIcon(type: string) {
   switch (type) {
-    case 'PushEvent':
-      return { icon: GitBranch, color: 'bg-green-100 dark:bg-green-900/20 text-green-600' }
-    case 'CreateEvent':
-      return { icon: Zap, color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-600' }
-    case 'PullRequestEvent':
-      return { icon: TrendingUp, color: 'bg-purple-100 dark:bg-purple-900/20 text-purple-600' }
-    case 'IssuesEvent':
-      return { icon: Calendar, color: 'bg-orange-100 dark:bg-orange-900/20 text-orange-600' }
+    case "PushEvent":
+      return {
+        icon: GitBranch,
+        color: "bg-green-100 dark:bg-green-900/20 text-green-600",
+      };
+    case "CreateEvent":
+      return {
+        icon: Zap,
+        color: "bg-blue-100 dark:bg-blue-900/20 text-blue-600",
+      };
+    case "PullRequestEvent":
+      return {
+        icon: TrendingUp,
+        color: "bg-purple-100 dark:bg-purple-900/20 text-purple-600",
+      };
+    case "IssuesEvent":
+      return {
+        icon: Calendar,
+        color: "bg-orange-100 dark:bg-orange-900/20 text-orange-600",
+      };
     default:
-      return { icon: Activity, color: 'bg-gray-100 dark:bg-gray-900/20 text-gray-600' }
+      return {
+        icon: Activity,
+        color: "bg-gray-100 dark:bg-gray-900/20 text-gray-600",
+      };
   }
 }
 
 // Format time ago
 function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  if (diffInSeconds < 60) return 'just now'
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
-  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`
-  
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  if (diffInSeconds < 60) return "just now";
+  if (diffInSeconds < 3600)
+    return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+  if (diffInSeconds < 86400)
+    return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+  if (diffInSeconds < 604800)
+    return `${Math.floor(diffInSeconds / 86400)} days ago`;
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 // Recent Events Component
@@ -148,17 +187,17 @@ function RecentEvents({ events }: { events: GitHubEvent[] }) {
           Activity will appear here once you start contributing
         </p>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-3">
       {events.map((event, index) => {
-        const { icon: EventIcon, color } = getEventIcon(event.type)
-        
+        const { icon: EventIcon, color } = getEventIcon(event.type);
+
         return (
-          <div 
-            key={index} 
+          <div
+            key={index}
             className="flex items-start space-x-4 p-4 rounded-lg border hover:bg-muted/50 transition-colors group"
           >
             {/* Icon */}
@@ -175,58 +214,58 @@ function RecentEvents({ events }: { events: GitHubEvent[] }) {
                   </p>
                 </div>
                 <Badge variant="outline" className="flex-shrink-0 text-xs">
-                  {event.type.replace('Event', '')}
+                  {event.type.replace("Event", "")}
                 </Badge>
               </div>
-              
+
               <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                 <Calendar className="h-3 w-3" />
                 <span>{formatTimeAgo(event.date)}</span>
               </div>
             </div>
           </div>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
 // Main GitHub Tracker Component
 export default function GitHubTracker() {
-  const [username, setUsername] = useState('')
-  const [data, setData] = useState<GitHubData | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [username, setUsername] = useState("");
+  const [data, setData] = useState<GitHubData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSearch = async () => {
-    if (!username.trim()) return
+    if (!username.trim()) return;
 
-    setIsLoading(true)
-    setError(null)
+    setIsLoading(true);
+    setError(null);
 
     try {
       // Replace this URL with your actual API endpoint
-      const response = await api.get(`/tracker/github-activity/${username}`)
-      
+      const response = await api.get(`/tracker/github-activity/${username}`);
+
       if (!response.status) {
-        throw new Error('Failed to fetch GitHub data')
+        throw new Error("Failed to fetch GitHub data");
       }
 
-      const result = await response.data
-      console.log(result)
-      setData(result)
+      const result = await response.data;
+      console.log(result);
+      setData(result);
     } catch (err) {
-      setError('Failed to fetch GitHub data')
+      setError("Failed to fetch GitHub data");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch()
+    if (e.key === "Enter") {
+      handleSearch();
     }
-  }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -261,7 +300,11 @@ export default function GitHubTracker() {
               onKeyPress={handleKeyPress}
               className="flex-1"
             />
-            <Button onClick={handleSearch} disabled={isLoading || !username.trim()}>
+            <Button
+              className="hover:cursor-pointer"
+              onClick={handleSearch}
+              disabled={isLoading || !username.trim()}
+            >
               {isLoading ? (
                 <>
                   <Activity className="h-4 w-4 mr-2 animate-spin" />
@@ -275,12 +318,16 @@ export default function GitHubTracker() {
               )}
             </Button>
           </div>
-          {error && (
-            <p className="text-sm text-red-600 mt-2">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
         </CardContent>
       </Card>
 
+      {isLoading && (
+        <div className="flex flex-col w-full justify-center items-center">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      )}
       {/* User Data Display */}
       {data && (
         <div className="space-y-6">
@@ -298,9 +345,9 @@ export default function GitHubTracker() {
                   </div>
                 </div>
                 <Button variant="outline" asChild>
-                  <a 
-                    href={`https://github.com/${data.username}`} 
-                    target="_blank" 
+                  <a
+                    href={`https://github.com/${data.username}`}
+                    target="_blank"
                     rel="noopener noreferrer"
                   >
                     <Github className="h-4 w-4 mr-2" />
@@ -316,7 +363,9 @@ export default function GitHubTracker() {
             {/* Total Repositories */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Repositories</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Repositories
+                </CardTitle>
                 <GitBranch className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -330,11 +379,15 @@ export default function GitHubTracker() {
             {/* Languages Count */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Programming Languages</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Programming Languages
+                </CardTitle>
                 <Code className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{data.top_languages.length}</div>
+                <div className="text-3xl font-bold">
+                  {data.top_languages.length}
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Different languages used
                 </p>
@@ -344,7 +397,9 @@ export default function GitHubTracker() {
             {/* Activity Status */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Recent Activity
+                </CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -372,7 +427,10 @@ export default function GitHubTracker() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <TopLanguages languages={data.top_languages} totalRepos={data.total_repos} />
+                <TopLanguages
+                  languages={data.top_languages}
+                  totalRepos={data.total_repos}
+                />
               </CardContent>
             </Card>
 
@@ -390,9 +448,12 @@ export default function GitHubTracker() {
               <CardContent>
                 <div className="space-y-3">
                   {data.top_languages.map(([language, count]) => {
-                    const color = languageColors[language] || '#gray'
+                    const color = languageColors[language] || "#gray";
                     return (
-                      <div key={language} className="flex items-center justify-between p-3 rounded-lg border">
+                      <div
+                        key={language}
+                        className="flex items-center justify-between p-3 rounded-lg border"
+                      >
                         <div className="flex items-center space-x-3">
                           <div
                             className="w-4 h-4 rounded-full"
@@ -401,13 +462,14 @@ export default function GitHubTracker() {
                           <div>
                             <p className="font-medium">{language}</p>
                             <p className="text-xs text-muted-foreground">
-                              {count} {count === 1 ? 'repository' : 'repositories'}
+                              {count}{" "}
+                              {count === 1 ? "repository" : "repositories"}
                             </p>
                           </div>
                         </div>
                         <Badge variant="secondary">{count}</Badge>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </CardContent>
@@ -443,19 +505,26 @@ export default function GitHubTracker() {
             </CardHeader>
             <CardContent className="h-[300px] pt-6">
               <Example weeklyActivity={data.weekly_activity} />
-            </CardContent> 
+            </CardContent>
           </Card>
           {/* Summary Card */}
           <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Profile Summary</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Profile Summary
+                  </h3>
                   <p className="text-muted-foreground">
-                    <strong>@{data.username}</strong> has <strong>{data.total_repos}</strong> public repositories
-                    using <strong>{data.top_languages.length}</strong> different programming languages.
+                    <strong>@{data.username}</strong> has{" "}
+                    <strong>{data.total_repos}</strong> public repositories
+                    using <strong>{data.top_languages.length}</strong> different
+                    programming languages.
                     {data.top_languages.length > 0 && (
-                      <> Most used: <strong>{data.top_languages[0][0]}</strong>.</>
+                      <>
+                        {" "}
+                        Most used: <strong>{data.top_languages[0][0]}</strong>.
+                      </>
                     )}
                   </p>
                 </div>
@@ -476,10 +545,11 @@ export default function GitHubTracker() {
             Ready to explore GitHub profiles?
           </h3>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Enter a GitHub username above to view their coding statistics, top languages, and repository information.
+            Enter a GitHub username above to view their coding statistics, top
+            languages, and repository information.
           </p>
         </div>
       )}
     </div>
-  )
+  );
 }
