@@ -55,8 +55,7 @@ Core features are implemented, with additional enhancements planned.
 
 **Tools & Deployment**
 - Git & GitHub  
-- Docker (planned)  
-- Render / Railway (planned deployment)  
+- PythonAnyWhere / Vercel 
 
 ---
 
